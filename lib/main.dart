@@ -1,125 +1,318 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:qr_code_scanner/qr_code_scanner.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+class CartProvider with ChangeNotifier {
+  Map<String, CartItem> _items = {};
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  Map<String, CartItem> get items {
+    return {..._items};
+  }
 
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
+  double get totalAmount {
+    return _items.values.fold(0, (sum, item) => sum + item.price * item.quantity);
+  }
+
+  int get totalQuantity {
+    return _items.values.fold(0, (sum, item) => sum + item.quantity);
+  }
+
+  void addItem(String id, String title, double price) {
+    if (_items.containsKey(id)) {
+      _items.update(
+        id,
+        (existingItem) => CartItem(
+          id: existingItem.id,
+          title: existingItem.title,
+          quantity: existingItem.quantity + 1,
+          price: existingItem.price,
+        ),
+      );
+    } else {
+      _items.putIfAbsent(
+        id,
+        () => CartItem(
+          id: id,
+          title: title,
+          quantity: 1,
+          price: price,
+        ),
+      );
+    }
+    notifyListeners();
+  }
+
+  void removeItem(String id) {
+    _items.remove(id);
+    notifyListeners();
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
+class CartItem {
+  final String id;
   final String title;
+  final int quantity;
+  final double price;
 
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  CartItem({
+    required this.id,
+    required this.title,
+    required this.quantity,
+    required this.price,
+  });
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class PaymentScreen extends StatelessWidget {
+  static const routeName = '/payment';
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+  void myDialog(BuildContext context) {
+    final cart = Provider.of<CartProvider>(context, listen: false);
+    final totalAmount = cart.totalAmount.toStringAsFixed(2);
+    final totalQuantity = cart.totalQuantity;
+    int remainingTime = 60;
+    Timer? timer;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        final mediaQuery = MediaQuery.of(context);
+        final isTablet = mediaQuery.size.width > 600;
+        final dialogWidth = isTablet ? 600.0 : mediaQuery.size.width * 0.8;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            void startTimer() {
+              timer = Timer.periodic(Duration(seconds: 1), (timer) {
+                setState(() {
+                  if (remainingTime > 0) {
+                    remainingTime--;
+                  } else {
+                    timer.cancel();
+                    Navigator.of(context).pop();
+                  }
+                });
+              });
+            }
+
+            void onQRViewCreated(QRViewController controller) {
+              controller.scannedDataStream.listen((scanData) {
+                timer?.cancel();
+                Navigator.of(context).pop();
+              });
+            }
+
+            if (remainingTime == 60) {
+              startTimer();
+            }
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Container(
+                width: dialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      height: 50,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Color.fromRGBO(255, 217, 1, 1.0),
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(15),
+                        ),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          "결제하기",
+                          style: TextStyle(
+                            fontSize: 25,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'saum',
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Container(
+                                width: 150,
+                                height: 50,
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  "제한 시간: $remainingTime 초",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontFamily: 'saum',
+                                    fontSize: 20,
+                                  ),
+                                ),
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '총 수량: $totalQuantity 개',
+                                    style: const TextStyle(
+                                      fontFamily: 'saum',
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                  Text(
+                                    '결제금액: $totalAmount 원',
+                                    style: const TextStyle(
+                                      fontFamily: 'saum',
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              QrImageView(
+                                data: 'https://aq.gy/f/z3ut0/u/$totalAmount',
+                                version: QrVersions.auto,
+                                size: 150,
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text(
+                                    '결제를 완료하면\n냉장고가 열립니다',
+                                    style: TextStyle(
+                                      fontFamily: 'saum',
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                  Text(
+                                    '잠시만 기다려주세요!',
+                                    style: TextStyle(
+                                      fontFamily: 'saum',
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed: () {
+                              timer?.cancel();
+                              Navigator.of(context).pop();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              minimumSize: Size(200, 50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: const Text(
+                              '취소',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'saum',
+                                fontSize: 20,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).then((_) {
+      timer?.cancel();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    final cart = Provider.of<CartProvider>(context);
+    final totalAmount = cart.totalAmount.toStringAsFixed(2);
+
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
+          children: [
+            const SizedBox(height: 20),
             Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+              '총 금액: \$${totalAmount}',
+              style: const TextStyle(fontSize: 20, fontFamily: 'saum'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                myDialog(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color.fromRGBO(255, 217, 1, 1.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                minimumSize: Size(150, 50),
+              ),
+              child: const Text(
+                '결제하기',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontFamily: 'saum',
+                  fontSize: 25,
+                ),
+              ),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
+}
+
+void main() {
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Flutter Demo',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          scaffoldBackgroundColor: Color.fromRGBO(27, 70, 180, 1.0),
+        ),
+        home: PaymentScreen(),
+        routes: {
+          PaymentScreen.routeName: (context) => PaymentScreen(),
+        },
+      ),
+    ),
+  );
 }
