@@ -1,11 +1,12 @@
-import 'dart:convert';
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import '../providers/cart_provider.dart';
+import 'login_screen.dart'; // 필요하면 import 추가
 
 class PaymentScreen extends StatelessWidget {
   static const routeName = '/payment';
@@ -256,35 +257,32 @@ class PaymentScreen extends StatelessWidget {
     final totalAmount = cart.totalAmount.toStringAsFixed(0);
 
     return Scaffold(
+      backgroundColor: Color.fromRGBO(27, 70, 180, 1.0),
+      appBar: AppBar(
+        backgroundColor: Color.fromRGBO(27, 70, 180, 1.0),
+        title: Text(
+          '거꾸로 매점',
+          style: TextStyle(
+            fontSize: 40,
+            fontFamily: 'saum',
+            color: Colors.white,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.login),
+            iconSize: 30,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AdminLoginPage()),
+              );
+            },
+          ),
+        ],
+      ),
       body: Stack(
         children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              color: Color.fromRGBO(27, 70, 180, 1.0),
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    "거꾸로 매점",
-                    style: TextStyle(
-                      fontSize: 40,
-                      fontFamily: 'saum',
-                      color: Colors.white,
-                    ),
-                  ),
-                  Image.asset(
-                    "assets/imgs/꾸로사진.png",
-                    width: 100,
-                    height: 60,
-                  ),
-                ],
-              ),
-            ),
-          ),
           Positioned(
             top: MediaQuery.of(context).size.height * 0.15,
             left: 20,
@@ -313,12 +311,12 @@ class PaymentScreen extends StatelessWidget {
                         Provider.of<CartProvider>(context, listen: false).addItem(
                           product['id'] as String,
                           product['title'] as String,
-                          product['price'] as int,
+                          product['price'] as int, // int 타입으로 변경
                         );
                       },
                       child: Container(
                         padding: EdgeInsets.all(10),
-                        margin: EdgeInsets.only(bottom: 12), 
+                        margin: EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(10),
@@ -367,9 +365,9 @@ class PaymentScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -444,10 +442,11 @@ class PaymentScreen extends StatelessWidget {
                                 ],
                               ),
                               Positioned(
-                                top: 0,
-                                right: 0,
+                                top: -7,
+                                right: 5,
                                 child: IconButton(
                                   icon: Icon(Icons.close),
+                                  iconSize: 20,
                                   onPressed: () {
                                     Provider.of<CartProvider>(context, listen: false).removeItem(item.id);
                                   },
@@ -459,27 +458,39 @@ class PaymentScreen extends StatelessWidget {
                       },
                     ),
                   ),
-                  SizedBox(height: 5),
                   Center(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        myDialog(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color.fromRGBO(255, 217, 1, 1.0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Text(
+                          "총액 : ${totalAmount}",
+                          style: TextStyle(
+                            fontFamily: 'saum',
+                            fontSize: 20,
+                          ),
                         ),
-                        minimumSize: Size(150, 50),
-                      ),
-                      child: Text(
-                        '결제하기',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontFamily: 'saum',
-                          fontSize: 25,
+                        SizedBox(width: 10),
+                        ElevatedButton(
+                          onPressed: () {
+                            myDialog(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color.fromRGBO(255, 217, 1, 1.0),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            minimumSize: Size(150, 50),
+                          ),
+                          child: Text(
+                            '결제하기',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontFamily: 'saum',
+                              fontSize: 25,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ],
@@ -491,3 +502,4 @@ class PaymentScreen extends StatelessWidget {
     );
   }
 }
+
