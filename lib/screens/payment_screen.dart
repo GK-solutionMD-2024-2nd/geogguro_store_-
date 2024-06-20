@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import '../providers/cart_provider.dart';
+import 'admin_screen.dart'; 
 
 class PaymentScreen extends StatelessWidget {
   static const routeName = '/payment';
@@ -97,6 +98,10 @@ class PaymentScreen extends StatelessWidget {
                 timer?.cancel();
                 Navigator.of(context).pop();
               });
+            }
+
+            void _navigateToAdminScreen(BuildContext context) {
+              Navigator.of(context).pushNamed(AdminScreen.routeName); // 관리자 페이지로 이동
             }
 
             if (remainingTime == 120) {
@@ -250,6 +255,10 @@ class PaymentScreen extends StatelessWidget {
     });
   }
 
+  void _navigateToAdminScreen(BuildContext context) {
+    Navigator.of(context).pushNamed(AdminScreen.routeName); // 관리자 페이지로 이동
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
@@ -268,12 +277,15 @@ class PaymentScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    "거꾸로 매점",
-                    style: TextStyle(
-                      fontSize: 40,
-                      fontFamily: 'saum',
-                      color: Colors.white,
+                  GestureDetector(
+                    onTap: () => _navigateToAdminScreen(context), // "거꾸로 매점" 클릭 시 관리자 페이지로 이동
+                    child: Text(
+                      "거꾸로 매점",
+                      style: TextStyle(
+                        fontSize: 40,
+                        fontFamily: 'saum',
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                   Image.asset(
@@ -300,9 +312,8 @@ class PaymentScreen extends StatelessWidget {
                 ),
                 itemCount: 6, // 상품 수에 맞게 설정
                 itemBuilder: (ctx, index) {
-                  // 임시 상품 데이터를 사용
                   final product = {
-                    'id': 'p$index',
+                    'id': '$index',
                     'title': '상품 $index',
                     'price': 1000 + index * 100
                   };
@@ -318,7 +329,7 @@ class PaymentScreen extends StatelessWidget {
                       },
                       child: Container(
                         padding: EdgeInsets.all(10),
-                        margin: EdgeInsets.only(bottom: 12), 
+                        margin: EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(10),
@@ -444,10 +455,11 @@ class PaymentScreen extends StatelessWidget {
                                 ],
                               ),
                               Positioned(
-                                top: 0,
-                                right: 0,
+                                top: -7,
+                                right: 5,
                                 child: IconButton(
                                   icon: Icon(Icons.close),
+                                  iconSize: 20,
                                   onPressed: () {
                                     Provider.of<CartProvider>(context, listen: false).removeItem(item.id);
                                   },
@@ -461,25 +473,38 @@ class PaymentScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 5),
                   Center(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        myDialog(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color.fromRGBO(255, 217, 1, 1.0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Text(
+                          '총액 : $totalAmount',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'saum',
+                          ),
                         ),
-                        minimumSize: Size(150, 50),
-                      ),
-                      child: Text(
-                        '결제하기',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontFamily: 'saum',
-                          fontSize: 25,
+                        ElevatedButton(
+                          onPressed: () {
+                            myDialog(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color.fromRGBO(255, 217, 1, 1.0),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            minimumSize: Size(150, 50),
+                          ),
+                          child: Text(
+                            '결제하기',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontFamily: 'saum',
+                              fontSize: 25,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ],

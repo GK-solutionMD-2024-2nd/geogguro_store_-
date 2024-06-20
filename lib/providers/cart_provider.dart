@@ -14,6 +14,22 @@ class CartItem {
   });
 }
 
+class Goods {
+  final String id;
+  final String title;
+  final String img;
+  final int quantity;
+  final int price;
+
+  Goods({
+    required this.id,
+    required this.title,
+    required this.img,
+    required this.quantity,
+    required this.price,
+  });
+}
+
 class CartProvider with ChangeNotifier {
   Map<String, CartItem> _items = {};
 
