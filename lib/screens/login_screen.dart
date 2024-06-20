@@ -38,10 +38,6 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.blue, // 색상 변경
-      appBar: AppBar(
-        title: Text('관리자 로그인'),
-        backgroundColor: Colors.blue, // 색상 변경
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

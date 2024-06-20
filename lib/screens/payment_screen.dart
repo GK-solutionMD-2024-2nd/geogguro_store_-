@@ -258,28 +258,43 @@ class PaymentScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Color.fromRGBO(27, 70, 180, 1.0),
-      appBar: AppBar(
-        backgroundColor: Color.fromRGBO(27, 70, 180, 1.0),
-        title: Text(
-          '거꾸로 매점',
-          style: TextStyle(
-            fontSize: 40,
-            fontFamily: 'saum',
-            color: Colors.white,
+      Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            color: Color.fromRGBO(27, 70, 180, 1.0),
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.login),
+                  iconSize: 30,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => AdminLoginPage()),
+                    );
+                  },
+                ),
+                const Text(
+                  "거꾸로 매점",
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontFamily: 'saum',
+                    color: Colors.white,
+                  ),
+                ),
+                Image.asset(
+                  "assets/imgs/꾸로사진.png",
+                  width: 100,
+                  height: 60,
+                ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.login),
-            iconSize: 30,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => AdminLoginPage()),
-              );
-            },
-          ),
-        ],
       ),
       body: Stack(
         children: [
