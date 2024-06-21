@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/cart_provider.dart';
-import 'payment_screen.dart'
+import '../providers/cart_provider.dart'; // CartProvider를 import합니다.
+import 'payment_screen.dart'; // PaymentScreen을 import합니다.
 
 class AdminScreen extends StatefulWidget {
   static const String routeName = '/admin';
@@ -13,28 +13,81 @@ class AdminScreen extends StatefulWidget {
 class _AdminScreenState extends State<AdminScreen> {
   TextEditingController _productTitleController = TextEditingController();
   TextEditingController _productPriceController = TextEditingController();
-  
-List<Goods> goodsList = [];
-
+  TextEditingController _productQuantityController = TextEditingController();
 
   // 상품 추가 또는 수정 함수
-  void _saveProduct(BuildContext context) {
-    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+  void _saveProduct(BuildContext context, String id) {
+    final goodsProvider = Provider.of<CartProvider>(context, listen: false); // CartProvider를 사용합니다.
     String productTitle = _productTitleController.text;
-    double productPrice = double.tryParse(_productPriceController.text) ?? 0.0;
+    int productPrice = int.tryParse(_productPriceController.text) ?? 0;
+    int productQuantity = int.tryParse(_productQuantityController.text) ?? 0;
 
-    // Product 객체 생성 또는 업데이트 예시
-    if (productId.isNotEmpty && productTitle.isNotEmpty && productPrice > 0) {
-      cartProvider.addItem(productId, productTitle, productPrice.toInt());
-      // 장바구니에 상품 추가 또는 업데이트
+    // Goods 객체 생성 또는 업데이트
+    if (productTitle.isNotEmpty && productPrice > 0 && productQuantity > 0) {
+      Goods newGoods = Goods(
+        id: id,
+        title: productTitle,
+        img: '', // 임시 이미지 URL
+        price: productPrice,
+        quantity: productQuantity,
+      );
+
+      goodsProvider.addGoods(newGoods);
     }
   }
 
   // 상품 삭제 함수
   void _deleteProduct(BuildContext context, String productId) {
-    final cartProvider = Provider.of<CartProvider>(context, listen: false);
-    cartProvider.removeItem(productId);
-    // 장바구니에서 상품 삭제
+    final goodsProvider = Provider.of<CartProvider>(context, listen: false); // CartProvider를 사용합니다.
+    goodsProvider.removeGoods(productId);
+  }
+
+  // 상품 수정 다이얼로그
+  void _editProductDialog(BuildContext context, Goods goods) {
+    _productTitleController.text = goods.title;
+    _productPriceController.text = goods.price.toString();
+    _productQuantityController.text = goods.quantity.toString();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('상품 수정'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _productTitleController,
+              decoration: InputDecoration(labelText: '상품 이름'),
+            ),
+            TextField(
+              controller: _productPriceController,
+              decoration: InputDecoration(labelText: '상품 가격'),
+              keyboardType: TextInputType.number,
+            ),
+            TextField(
+              controller: _productQuantityController,
+              decoration: InputDecoration(labelText: '상품 수량'),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _saveProduct(context, goods.id);
+              Navigator.of(context).pop();
+            },
+            child: Text('저장'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -48,9 +101,9 @@ List<Goods> goodsList = [];
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(
-              controller: _productIdController,
-              decoration: InputDecoration(labelText: '상품 ID'),
+            Text(
+              '상품 추가',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             TextField(
               controller: _productTitleController,
@@ -61,33 +114,44 @@ List<Goods> goodsList = [];
               decoration: InputDecoration(labelText: '상품 가격'),
               keyboardType: TextInputType.number,
             ),
+            TextField(
+              controller: _productQuantityController,
+              decoration: InputDecoration(labelText: '상품 수량'),
+              keyboardType: TextInputType.number,
+            ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () => _saveProduct(context),
-              child: Text('저장'),
+              onPressed: () {
+                String newId = DateTime.now().toString(); // 임시 ID
+                _saveProduct(context, newId);
+                _productTitleController.clear();
+                _productPriceController.clear();
+                _productQuantityController.clear();
+              },
+              child: Text('추가'),
             ),
             SizedBox(height: 20),
             Text(
-              '상품 삭제',
+              '상품 리스트',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 10),
-            // 상품 삭제 기능을 구현한 리스트뷰
-            Consumer<CartProvider>(
-              builder: (context, cartProvider, _) => ListView.builder(
-                shrinkWrap: true,
-                itemCount: cartProvider.items.length,
-                itemBuilder: (context, index) {
-                  final productId = cartProvider.items.keys.toList()[index];
-                  final product = cartProvider.items[productId]!;
-                  return ListTile(
-                    title: Text(product.title),
-                    trailing: IconButton(
-                      icon: Icon(Icons.delete),
-                      onPressed: () => _deleteProduct(context, productId),
-                    ),
-                  );
-                },
+            Expanded(
+              child: Consumer<CartProvider>(
+                builder: (context, goodsProvider, _) => ListView.builder(
+                  itemCount: goodsProvider.goodsList.length, // goodsProvider에서 goodsList를 사용합니다.
+                  itemBuilder: (context, index) {
+                    final goods = goodsProvider.goodsList[index];
+                    return ListTile(
+                      title: Text(goods.title),
+                      subtitle: Text('${goods.price} 원 / ${goods.quantity} 개'),
+                      trailing: IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () => _deleteProduct(context, goods.id),
+                      ),
+                      onTap: () => _editProductDialog(context, goods),
+                    );
+                  },
+                ),
               ),
             ),
           ],

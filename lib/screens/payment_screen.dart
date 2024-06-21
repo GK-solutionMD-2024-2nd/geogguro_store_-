@@ -63,7 +63,8 @@ class PaymentScreen extends StatelessWidget {
 
                 // 주기적으로 결제 상태 확인
                 if (remainingTime % 5 == 0) { // 5초마다 확인
-                  bool status = await checkPaymentStatus('7777029976146', totalAmount);
+                  int parsedAmount = int.parse(totalAmount); // 또는 int.parse를 사용할 수도 있습니다.
+                  bool status = await checkPaymentStatus('7777029976146', parsedAmount.toString());
                   setState(() {
                     paymentSuccess = status;
                   });
@@ -265,7 +266,11 @@ class PaymentScreen extends StatelessWidget {
     final totalAmount = cart.totalAmount.toStringAsFixed(0);
 
     return Scaffold(
-      body: Stack(
+      body: 
+      Consumer<CartProvider>(
+              builder: (context, provider, child) {
+                return 
+      Stack(
         children: [
           Positioned(
             top: 0,
@@ -301,7 +306,8 @@ class PaymentScreen extends StatelessWidget {
             top: MediaQuery.of(context).size.height * 0.15,
             left: 20,
             right: 20,
-            child: Container(
+            child: 
+                Container(
               height: MediaQuery.of(context).size.height * 0.6,
               child: GridView.builder(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -310,17 +316,19 @@ class PaymentScreen extends StatelessWidget {
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
                 ),
-                itemCount: 6, // 상품 수에 맞게 설정
+                itemCount: provider.goodsList.length,
                 itemBuilder: (ctx, index) {
+                  var goodsList = provider.goodsList;
                   final product = {
-                    'id': '$index',
-                    'title': '상품 $index',
-                    'price': 1000 + index * 100
+                    'id': '${goodsList[index].id}',
+                    'title': '${goodsList[index].title}',
+                    'price': goodsList[index].price,
+                    'quantity': goodsList[index].quantity,
+                    'img': goodsList[index].img
                   };
                   return GridTile(
                     child: GestureDetector(
                       onTap: () {
-                        // 상품을 장바구니에 추가
                         Provider.of<CartProvider>(context, listen: false).addItem(
                           product['id'] as String,
                           product['title'] as String,
@@ -348,14 +356,10 @@ class PaymentScreen extends StatelessWidget {
                             Container(
                               height: 100,
                               width: double.infinity,
-                              color: Colors.grey[200],
-                              child: Center(
-                                child: Text(
-                                  '이미지',
-                                  style: TextStyle(
-                                    fontFamily: 'saum',
-                                    fontSize: 18,
-                                  ),
+                              decoration: BoxDecoration(
+                                image: DecorationImage(
+                                  image: NetworkImage(product['img'] as String),
+                                  fit: BoxFit.cover, // 필요에 따라 추가
                                 ),
                               ),
                             ),
@@ -375,6 +379,14 @@ class PaymentScreen extends StatelessWidget {
                                 fontSize: 16,
                               ),
                             ),
+                            Spacer(),
+                            Text(
+                              '남은 수량 : ${product['quantity']} 개',
+                              style: TextStyle(
+                                fontFamily: 'saum',
+                                fontSize: 16,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -382,7 +394,9 @@ class PaymentScreen extends StatelessWidget {
                   );
                 },
               ),
-            ),
+            )
+             
+             
           ),
           Positioned(
             bottom: -12,
@@ -416,20 +430,16 @@ class PaymentScreen extends StatelessWidget {
                             children: [
                               Column(
                                 children: [
-                                  Container(
-                                    height: 60,
-                                    width: 60,
-                                    color: Colors.grey[200],
-                                    child: Center(
-                                      child: Text(
-                                        '이미지',
-                                        style: TextStyle(
-                                          fontFamily: 'saum',
-                                          fontSize: 18,
-                                        ),
-                                      ),
+                                Container(
+                                  height: 60,
+                                  width: 60,
+                                  decoration: BoxDecoration(
+                                    image: DecorationImage(
+                                      image: NetworkImage(provider.goodsList[i].img),
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
+                                ),
                                   SizedBox(height: 5),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -512,7 +522,7 @@ class PaymentScreen extends StatelessWidget {
             ),
           ),
         ],
-      ),
+      );})
     );
   }
 }
