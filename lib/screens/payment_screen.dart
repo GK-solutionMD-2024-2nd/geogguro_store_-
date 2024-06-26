@@ -5,8 +5,13 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:assets_audio_player/assets_audio_player.dart'; // Import assets_audio_player
 import '../providers/cart_provider.dart';
-import 'admin_screen.dart'; 
+import 'admin_screen.dart';
+import 'password_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
+late AssetsAudioPlayer _assetsAudioPlayer = AssetsAudioPlayer.newPlayer();
 
 class PaymentScreen extends StatelessWidget {
   static const routeName = '/payment';
@@ -100,6 +105,13 @@ class PaymentScreen extends StatelessWidget {
                 Navigator.of(context).pop();
               });
             }
+
+            _assetsAudioPlayer.open(
+              Audio("assets/audios/flutter.wav"),
+              loopMode: LoopMode.none, // 반복 없이 한 번만 재생
+              autoStart: true, // 자동 시작
+              showNotification: false, // 알림 표시 안 함
+            );
 
             void _navigateToAdminScreen(BuildContext context) {
               Navigator.of(context).pushNamed(AdminScreen.routeName); // 관리자 페이지로 이동
@@ -257,7 +269,7 @@ class PaymentScreen extends StatelessWidget {
   }
 
   void _navigateToAdminScreen(BuildContext context) {
-    Navigator.of(context).pushNamed(AdminScreen.routeName); // 관리자 페이지로 이동
+    Navigator.of(context).pushNamed(AdminLoginPage.routeName); // 관리자 페이지로 이동
   }
 
   @override
@@ -266,263 +278,301 @@ class PaymentScreen extends StatelessWidget {
     final totalAmount = cart.totalAmount.toStringAsFixed(0);
 
     return Scaffold(
-      body: 
-      Consumer<CartProvider>(
-              builder: (context, provider, child) {
-                return 
-      Stack(
-        children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              color: Color.fromRGBO(27, 70, 180, 1.0),
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  GestureDetector(
-                    onTap: () => _navigateToAdminScreen(context), // "거꾸로 매점" 클릭 시 관리자 페이지로 이동
-                    child: Text(
-                      "거꾸로 매점",
-                      style: TextStyle(
-                        fontSize: 40,
-                        fontFamily: 'saum',
-                        color: Colors.white,
+      body: Consumer<CartProvider>(
+        builder: (context, provider, child) {
+          return Stack(
+            children: [
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  color: Color.fromRGBO(27, 70, 180, 1.0),
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      GestureDetector(
+                        onTap: () => _navigateToAdminScreen(context), // "거꾸로 매점" 클릭 시 관리자 페이지로 이동
+                        child: Text(
+                          "거꾸로 매점",
+                          style: TextStyle(
+                            fontSize: 40,
+                            fontFamily: 'saum',
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
-                    ),
+                      Image.asset(
+                        "assets/imgs/꾸로사진.png",
+                        width: 100,
+                        height: 60,
+                      ),
+                    ],
                   ),
-                  Image.asset(
-                    "assets/imgs/꾸로사진.png",
-                    width: 100,
-                    height: 60,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.15,
-            left: 20,
-            right: 20,
-            child: 
-                Container(
-              height: MediaQuery.of(context).size.height * 0.6,
-              child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 1.2,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
                 ),
-                itemCount: provider.goodsList.length,
-                itemBuilder: (ctx, index) {
-                  var goodsList = provider.goodsList;
-                  final product = {
-                    'id': '${goodsList[index].id}',
-                    'title': '${goodsList[index].title}',
-                    'price': goodsList[index].price,
-                    'quantity': goodsList[index].quantity,
-                    'img': goodsList[index].img
-                  };
-                  return GridTile(
-                    child: GestureDetector(
-                      onTap: () {
-                        Provider.of<CartProvider>(context, listen: false).addItem(
-                          product['id'] as String,
-                          product['title'] as String,
-                          product['price'] as int,
-                        );
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(10),
-                        margin: EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.5),
-                              spreadRadius: 1,
-                              blurRadius: 3,
-                              offset: Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              height: 100,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                image: DecorationImage(
-                                  image: NetworkImage(product['img'] as String),
-                                  fit: BoxFit.cover, // 필요에 따라 추가
-                                ),
-                              ),
-                            ),
-                            Spacer(),
-                            Text(
-                              product['title'] as String,
-                              style: TextStyle(
-                                fontFamily: 'saum',
-                                fontSize: 18,
-                              ),
-                            ),
-                            Spacer(),
-                            Text(
-                              '${product['price']} 원',
-                              style: TextStyle(
-                                fontFamily: 'saum',
-                                fontSize: 16,
-                              ),
-                            ),
-                            Spacer(),
-                            Text(
-                              '남은 수량 : ${product['quantity']} 개',
-                              style: TextStyle(
-                                fontFamily: 'saum',
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
               ),
-            )
-             
-             
-          ),
-          Positioned(
-            bottom: -12,
-            left: 0,
-            right: 0,
-            child: Container(
-              color: Colors.white,
-              padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '장바구니',
-                    style: TextStyle(
-                      fontSize: 25,
-                      fontFamily: 'saum',
-                      fontWeight: FontWeight.bold,
+              Positioned(
+                top: MediaQuery.of(context).size.height * 0.15,
+                left: 20,
+                right: 20,
+                child: Container(
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  child: GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3, // 한 줄에 세 개의 항목
+                      childAspectRatio: 1.2,
+                      crossAxisSpacing: 25,
+                      mainAxisSpacing: 15,
                     ),
-                  ),
-                  Container(
-                    height: 100,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: cart.items.length,
-                      itemBuilder: (ctx, i) {
-                        final item = cart.items.values.toList()[i];
-                        return Container(
-                          width: 90,
-                          margin: EdgeInsets.symmetric(horizontal: 5),
-                          child: Stack(
-                            children: [
-                              Column(
-                                children: [
+                    itemCount: provider.goodsList.length,
+                    itemBuilder: (ctx, index) {
+                      var goodsList = provider.goodsList;
+                      final product = {
+                        'id': '${goodsList[index].id}',
+                        'title': '${goodsList[index].title}',
+                        'price': goodsList[index].price,
+                        'quantity': goodsList[index].quantity,
+                        'img': goodsList[index].img
+                      };
+                      return GridTile(
+                        child: GestureDetector(
+                          onTap: () {
+                            var cartProvider = Provider.of<CartProvider>(context, listen: false);
+                            var currentGoods = cartProvider.goodsList[index];
+                            var currentCartQuantity = cartProvider.items[currentGoods.id]?.quantity ?? 0;
+
+                            if (currentGoods.quantity > currentCartQuantity) {
+                              cartProvider.addItem(
+                                currentGoods.id,
+                                currentGoods.title,
+                                currentGoods.price,
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('상품이 더 이상 선택할 수 없습니다.'),
+                                ),
+                              );
+                            }
+                          },
+                          child: Container(
+                            padding: EdgeInsets.all(10),
+                            margin: EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.5),
+                                  spreadRadius: 1,
+                                  blurRadius: 3,
+                                  offset: Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Container(
-                                  height: 60,
-                                  width: 60,
-                                  decoration: BoxDecoration(
-                                    image: DecorationImage(
-                                      image: NetworkImage(provider.goodsList[i].img),
-                                      fit: BoxFit.cover,
+                                  height: 165,
+                                  width: double.infinity,
+                                  // child: Image.network(
+                                  //   product['img'] as String,
+                                  //   fit: BoxFit.contain, // 이미지가 컨테이너 내에서 비율을 유지하며 맞춰짐
+                                  //   loadingBuilder: (context, child, loadingProgress) {
+                                  //     if (loadingProgress == null) {
+                                  //       return child;
+                                  //     }
+                                  //     return Center(
+                                  //       child: CircularProgressIndicator(
+                                  //         value: loadingProgress.expectedTotalBytes != null
+                                  //             ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                  //             : null,
+                                  //       ),
+                                  //     );
+                                  //   },
+                                  //   errorBuilder: (context, error, stackTrace) {
+                                  //     return Center(
+                                  //       child: Text(
+                                  //         '이미지 로드 실패',
+                                  //         style: TextStyle(color: Colors.red),
+                                  //       ),
+                                  //     );
+                                  //   },
+                                  // ),
+                                  child: CachedNetworkImage(
+                                    imageUrl: product['img'] as String,
+                                    fit: BoxFit.cover,
+                                    width: 300,
+                                    errorWidget: (context, url, error) => Text("error!")
+                                    
+                                  )
+                                ),
+                                SizedBox(height: 8),
+                                Flexible(
+                                  child: Text(
+                                    product['title'] as String,
+                                    style: TextStyle(
+                                      fontFamily: 'saum',
+                                      fontSize: 18,
                                     ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                  SizedBox(height: 5),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: <Widget>[
-                                      Text(
-                                        '${item.title}',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontFamily: 'saum',
-                                          fontSize: 16,
+                                SizedBox(height: 8),
+                                Text(
+                                  '${product['price']} 원',
+                                  style: TextStyle(
+                                    fontFamily: 'saum',
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  '남은 수량 : ${product['quantity']} 개',
+                                  style: TextStyle(
+                                    fontFamily: 'saum',
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -12,
+                left: 0,
+                right: 0,
+                child: Container(
+                  color: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '장바구니',
+                        style: TextStyle(
+                          fontSize: 25,
+                          fontFamily: 'saum',
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Container(
+                        height: 100,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: cart.items.length,
+                          itemBuilder: (ctx, i) {
+                            final item = cart.items.values.toList()[i];
+                            return Container(
+                              width: 90,
+                              margin: EdgeInsets.symmetric(horizontal: 5),
+                              child: Stack(
+                                children: [
+                                  Column(
+                                    children: [
+                                      Container(
+                                        height: 60,
+                                        width: 60,
+                                        decoration: BoxDecoration(
+                                          image: DecorationImage(
+                                            image: NetworkImage(provider.goodsList[i].img),
+                                            fit: BoxFit.cover,
+                                          ),
                                         ),
                                       ),
-                                      SizedBox(width: 5),
-                                      Text(
-                                        '${item.quantity} 개',
-                                        style: TextStyle(
-                                          fontFamily: 'saum',
-                                          fontSize: 16,
-                                        ),
+                                      SizedBox(height: 5),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: <Widget>[
+                                          Text(
+                                            '${item.title}',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontFamily: 'saum',
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          SizedBox(width: 5),
+                                          Text(
+                                            '${item.quantity} 개',
+                                            style: TextStyle(
+                                              fontFamily: 'saum',
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
+                                  Positioned(
+                                    top: -7,
+                                    right: 5,
+                                    child: IconButton(
+                                      icon: Icon(Icons.close),
+                                      iconSize: 20,
+                                      onPressed: () {
+                                        Provider.of<CartProvider>(context, listen: false).removeItem(item.id);
+                                      },
+                                    ),
+                                  ),
                                 ],
                               ),
-                              Positioned(
-                                top: -7,
-                                right: 5,
-                                child: IconButton(
-                                  icon: Icon(Icons.close),
-                                  iconSize: 20,
-                                  onPressed: () {
-                                    Provider.of<CartProvider>(context, listen: false).removeItem(item.id);
-                                  },
+                            );
+                          },
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Text(
+                              '총액 : $totalAmount',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'saum',
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () async {
+                                _assetsAudioPlayer.play(); //재생
+                                myDialog(context);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color.fromRGBO(255, 217, 1, 1.0),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                minimumSize: Size(150, 50),
+                              ),
+                              child: Text(
+                                '결제하기',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontFamily: 'saum',
+                                  fontSize: 25,
                                 ),
                               ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  SizedBox(height: 5),
-                  Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Text(
-                          '총액 : $totalAmount',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'saum',
-                          ),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            myDialog(context);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color.fromRGBO(255, 217, 1, 1.0),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
                             ),
-                            minimumSize: Size(150, 50),
-                          ),
-                          child: Text(
-                            '결제하기',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontFamily: 'saum',
-                              fontSize: 25,
-                            ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-        ],
-      );})
+            ],
+          );
+        },
+      ),
     );
   }
 }

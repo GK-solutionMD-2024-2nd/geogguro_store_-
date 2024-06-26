@@ -107,10 +107,7 @@ class CartProvider with ChangeNotifier {
 
   void removeGoods(String id) {
     _goodsList.removeWhere((goods) => goods.id == id);
-    // ID를 순서대로 재정렬
-    for (int i = 0; i < _goodsList.length; i++) {
-      _goodsList[i].id = (i + 1).toString();
-    }
+    _items.remove(id); // Remove the item from the cart as well
     notifyListeners();
   }
 }

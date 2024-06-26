@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Add this import for TextInputFormatter
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart'; // CartProvider를 import합니다.
-import 'payment_screen.dart'; // PaymentScreen을 import합니다.
+import 'password_screen.dart';
 
 class AdminScreen extends StatefulWidget {
   static const String routeName = '/admin';
@@ -12,22 +13,23 @@ class AdminScreen extends StatefulWidget {
 
 class _AdminScreenState extends State<AdminScreen> {
   TextEditingController _productTitleController = TextEditingController();
+  TextEditingController _productImageUrlController = TextEditingController();
   TextEditingController _productPriceController = TextEditingController();
   TextEditingController _productQuantityController = TextEditingController();
 
   // 상품 추가 또는 수정 함수
   void _saveProduct(BuildContext context, String id) {
-    final goodsProvider = Provider.of<CartProvider>(context, listen: false); // CartProvider를 사용합니다.
+    final goodsProvider = Provider.of<CartProvider>(context, listen: false);
     String productTitle = _productTitleController.text;
+    String productImageUrl = _productImageUrlController.text; // Get the image URL
     int productPrice = int.tryParse(_productPriceController.text) ?? 0;
     int productQuantity = int.tryParse(_productQuantityController.text) ?? 0;
 
-    // Goods 객체 생성 또는 업데이트
-    if (productTitle.isNotEmpty && productPrice > 0 && productQuantity > 0) {
+    if (productTitle.isNotEmpty && productImageUrl.isNotEmpty && productPrice > 0 && productQuantity > 0) {
       Goods newGoods = Goods(
         id: id,
         title: productTitle,
-        img: '', // 임시 이미지 URL
+        img: productImageUrl, // Use the image URL
         price: productPrice,
         quantity: productQuantity,
       );
@@ -47,6 +49,7 @@ class _AdminScreenState extends State<AdminScreen> {
     _productTitleController.text = goods.title;
     _productPriceController.text = goods.price.toString();
     _productQuantityController.text = goods.quantity.toString();
+    _productImageUrlController.text = goods.img;
 
     showDialog(
       context: context,
@@ -63,11 +66,21 @@ class _AdminScreenState extends State<AdminScreen> {
               controller: _productPriceController,
               decoration: InputDecoration(labelText: '상품 가격'),
               keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+              ],
             ),
             TextField(
               controller: _productQuantityController,
               decoration: InputDecoration(labelText: '상품 수량'),
               keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+            ),
+            TextField(
+              controller: _productImageUrlController,
+              decoration: InputDecoration(labelText: '이미지 URL'),
             ),
           ],
         ),
@@ -113,11 +126,21 @@ class _AdminScreenState extends State<AdminScreen> {
               controller: _productPriceController,
               decoration: InputDecoration(labelText: '상품 가격'),
               keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+              ],
             ),
             TextField(
               controller: _productQuantityController,
               decoration: InputDecoration(labelText: '상품 수량'),
               keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+            ),
+            TextField(
+              controller: _productImageUrlController,
+              decoration: InputDecoration(labelText: '이미지 URL'),
             ),
             SizedBox(height: 20),
             ElevatedButton(
@@ -127,6 +150,8 @@ class _AdminScreenState extends State<AdminScreen> {
                 _productTitleController.clear();
                 _productPriceController.clear();
                 _productQuantityController.clear();
+                _productImageUrlController.clear();
+                
               },
               child: Text('추가'),
             ),
