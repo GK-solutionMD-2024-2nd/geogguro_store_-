@@ -1,5 +1,5 @@
-import 'dart:async';
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
@@ -9,34 +9,11 @@ import 'package:assets_audio_player/assets_audio_player.dart'; // Import assets_
 import '../providers/cart_provider.dart';
 import 'admin_screen.dart';
 import 'password_screen.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 late AssetsAudioPlayer _assetsAudioPlayer = AssetsAudioPlayer.newPlayer();
-import 'login_screen.dart'; // 필요하면 import 추가
 
 class PaymentScreen extends StatelessWidget {
   static const routeName = '/payment';
-
-  Future<bool> checkPaymentStatus(String accountId, String amount) async {
-    final url = Uri.parse('https://api.yourservice.com/check_payment');
-    final response = await http.post(
-      url,
-      body: json.encode({
-        'account_id': accountId,
-        'amount': amount,
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return data['payment_success'];
-    } else {
-      throw Exception('Failed to load payment status');
-    }
-  }
 
   void myDialog(BuildContext context) {
     final cart = Provider.of<CartProvider>(context, listen: false);
@@ -44,8 +21,6 @@ class PaymentScreen extends StatelessWidget {
     final totalQuantity = cart.totalQuantity;
     int remainingTime = 120;
     Timer? timer;
-    QRViewController? qrController;
-    bool paymentSuccess = false;
 
     showDialog(
       context: context,
@@ -66,57 +41,15 @@ class PaymentScreen extends StatelessWidget {
                     Navigator.of(context).pop();
                   }
                 });
-
-                // 주기적으로 결제 상태 확인
-                if (remainingTime % 5 == 0) { // 5초마다 확인
-                  int parsedAmount = int.parse(totalAmount); // 또는 int.parse를 사용할 수도 있습니다.
-                  bool status = await checkPaymentStatus('7777029976146', parsedAmount.toString());
-                  setState(() {
-                    paymentSuccess = status;
-                  });
-                  if (paymentSuccess) {
-                    timer.cancel();
-                    // 결제 성공 메시지 표시
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: Text("결제 성공"),
-                        content: Text("결제가 성공적으로 완료되었습니다."),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop(); // 다이얼로그 닫기
-                            },
-                            child: Text("확인"),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                }
               });
             }
-
-            void onQRViewCreated(QRViewController controller) {
-              qrController = controller;
-              controller.scannedDataStream.listen((scanData) {
-                // QR 코드가 스캔되었음을 확인할 수 있는 부분
-                print("QR 코드가 스캔되었습니다: ${scanData.code}");
-                timer?.cancel();
-                Navigator.of(context).pop();
-              });
-            }
-
-            _assetsAudioPlayer.open(
-              Audio("assets/audios/flutter.wav"),
-              loopMode: LoopMode.none, // 반복 없이 한 번만 재생
-              autoStart: true, // 자동 시작
-              showNotification: false, // 알림 표시 안 함
-            );
-
-            void _navigateToAdminScreen(BuildContext context) {
-              Navigator.of(context).pushNamed(AdminScreen.routeName); // 관리자 페이지로 이동
-            }
+            
+            // _assetsAudioPlayer.open(
+            //   Audio("assets/audios/flutter.wav"),
+            //   loopMode: LoopMode.none, // 반복 없이 한 번만 재생
+            //   autoStart: true, // 자동 시작
+            //   showNotification: false, // 알림 표시 안 함
+            // );
 
             if (remainingTime == 120) {
               startTimer();
@@ -265,12 +198,11 @@ class PaymentScreen extends StatelessWidget {
       },
     ).then((_) {
       timer?.cancel();
-      qrController?.dispose();
     });
   }
 
   void _navigateToAdminScreen(BuildContext context) {
-    Navigator.of(context).pushNamed(AdminLoginPage.routeName); // 관리자 페이지로 이동
+    Navigator.of(context).pushNamed(PasswordPage.routeName); // 관리자 페이지로 이동
   }
 
   @override
@@ -279,152 +211,37 @@ class PaymentScreen extends StatelessWidget {
     final totalAmount = cart.totalAmount.toStringAsFixed(0);
 
     return Scaffold(
-      backgroundColor: Color.fromRGBO(27, 70, 180, 1.0),
-      Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: Container(
-            color: Color.fromRGBO(27, 70, 180, 1.0),
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.login),
-                  iconSize: 30,
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => AdminLoginPage()),
-                    );
-                  },
-                ),
-                const Text(
-                  "거꾸로 매점",
-                  style: TextStyle(
-                    fontSize: 40,
-                    fontFamily: 'saum',
-                    color: Colors.white,
-                  ),
-                ),
-                Image.asset(
-                  "assets/imgs/꾸로사진.png",
-                  width: 100,
-                  height: 60,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      body: Stack(
-        children: [
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.15,
-            left: 20,
-            right: 20,
-            child: Container(
-              height: MediaQuery.of(context).size.height * 0.6,
-              child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 1.2,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                ),
-                itemCount: 6, // 상품 수에 맞게 설정
-                itemBuilder: (ctx, index) {
-                  // 임시 상품 데이터를 사용
-                  final product = {
-                    'id': 'p$index',
-                    'title': '상품 $index',
-                    'price': 1000 + index * 100
-                  };
-                  return GridTile(
-                    child: GestureDetector(
-                      onTap: () {
-                        // 상품을 장바구니에 추가
-                        Provider.of<CartProvider>(context, listen: false).addItem(
-                          product['id'] as String,
-                          product['title'] as String,
-                          product['price'] as int, // int 타입으로 변경
-                        );
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(10),
-                        margin: EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.5),
-                              spreadRadius: 1,
-                              blurRadius: 3,
-                              offset: Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              height: 100,
-                              width: double.infinity,
-                              color: Colors.grey[200],
-                              child: Center(
-                                child: Text(
-                                  '이미지',
-                                  style: TextStyle(
-                                    fontFamily: 'saum',
-                                    fontSize: 18,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Spacer(),
-                            Text(
-                              product['title'] as String,
-                              style: TextStyle(
-                                fontFamily: 'saum',
-                                fontSize: 18,
-                              ),
-                            ),
-                            Spacer(),
-                            Text(
-                              '${product['price']} 원',
-                              style: TextStyle(
-                                fontFamily: 'saum',
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
+      body: Consumer<CartProvider>(
+        builder: (context, provider, child) {
+          return Stack(
+            children: [
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  color: Color.fromRGBO(27, 70, 180, 1.0),
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      GestureDetector(
+                        onTap: () => _navigateToAdminScreen(context), // "거꾸로 매점" 클릭 시 관리자 페이지로 이동
+                        child: Text(
+                          "거꾸로 매점",
+                          style: TextStyle(
+                            fontSize: 40,
+                            fontFamily: 'saum',
+                            color: Colors.white,
+                          ),
                         ),
                       ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -12,
-            left: 0,
-            right: 0,
-            child: Container(
-              color: Colors.white,
-              padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '장바구니',
-                    style: TextStyle(
-                      fontSize: 25,
-                      fontFamily: 'saum',
-                      fontWeight: FontWeight.bold,
-                    ),
+                      Image.asset(
+                        "assets/imgs/꾸로사진.png",
+                        width: 100,
+                        height: 60,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -438,8 +255,8 @@ class PaymentScreen extends StatelessWidget {
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3, // 한 줄에 세 개의 항목
                       childAspectRatio: 1.2,
-                      crossAxisSpacing: 25,
-                      mainAxisSpacing: 15,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
                     ),
                     itemCount: provider.goodsList.length,
                     itemBuilder: (ctx, index) {
@@ -493,37 +310,30 @@ class PaymentScreen extends StatelessWidget {
                                 Container(
                                   height: 165,
                                   width: double.infinity,
-                                  // child: Image.network(
-                                  //   product['img'] as String,
-                                  //   fit: BoxFit.contain, // 이미지가 컨테이너 내에서 비율을 유지하며 맞춰짐
-                                  //   loadingBuilder: (context, child, loadingProgress) {
-                                  //     if (loadingProgress == null) {
-                                  //       return child;
-                                  //     }
-                                  //     return Center(
-                                  //       child: CircularProgressIndicator(
-                                  //         value: loadingProgress.expectedTotalBytes != null
-                                  //             ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                  //             : null,
-                                  //       ),
-                                  //     );
-                                  //   },
-                                  //   errorBuilder: (context, error, stackTrace) {
-                                  //     return Center(
-                                  //       child: Text(
-                                  //         '이미지 로드 실패',
-                                  //         style: TextStyle(color: Colors.red),
-                                  //       ),
-                                  //     );
-                                  //   },
-                                  // ),
-                                  child: CachedNetworkImage(
-                                    imageUrl: product['img'] as String,
-                                    fit: BoxFit.cover,
-                                    width: 300,
-                                    errorWidget: (context, url, error) => Text("error!")
-                                    
-                                  )
+                                  child: Image.network(
+                                    product['img'] as String,
+                                    fit: BoxFit.contain, // 이미지가 컨테이너 내에서 비율을 유지하며 맞춰짐
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) {
+                                        return child;
+                                      }
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Center(
+                                        child: Text(
+                                          '이미지 로드 실패',
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
                                 SizedBox(height: 8),
                                 Flexible(
@@ -658,8 +468,13 @@ class PaymentScreen extends StatelessWidget {
                               ),
                             ),
                             ElevatedButton(
-                              onPressed: () async {
-                                _assetsAudioPlayer.play(); //재생
+                              onPressed: () {
+                                _assetsAudioPlayer.open(
+                                  Audio("assets/audios/flutter.wav"),
+                                  loopMode: LoopMode.none, // 반복 없이 한 번만 재생
+                                  autoStart: true, // 자동 시작
+                                  showNotification: false, // 알림 표시 안 함
+                                );    
                                 myDialog(context);
                               },
                               style: ElevatedButton.styleFrom(
@@ -692,4 +507,3 @@ class PaymentScreen extends StatelessWidget {
     );
   }
 }
-

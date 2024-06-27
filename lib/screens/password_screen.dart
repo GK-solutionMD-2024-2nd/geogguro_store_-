@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'admin_screen.dart';
 import 'payment_screen.dart';
 
-
-class AdminLoginPage extends StatefulWidget {
-    static const String routeName = '/admin';
+class PasswordPage extends StatefulWidget {
+    static const String routeName = '/password';
   @override
-  _AdminLoginPageState createState() => _AdminLoginPageState();
+  _PasswordPageState createState() => _PasswordPageState();
 }
 
-class _AdminLoginPageState extends State<AdminLoginPage> {
+class _PasswordPageState extends State<PasswordPage> {
   final String _correctPassword = "0523";
   String _enteredPassword = "";
   String _errorMessage = "";

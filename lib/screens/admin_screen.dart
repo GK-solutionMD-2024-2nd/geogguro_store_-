@@ -3,6 +3,7 @@ import 'package:flutter/services.dart'; // Add this import for TextInputFormatte
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart'; // CartProvider를 import합니다.
 import 'password_screen.dart';
+import 'payment_screen.dart';
 
 class AdminScreen extends StatefulWidget {
   static const String routeName = '/admin';
@@ -106,15 +107,19 @@ class _AdminScreenState extends State<AdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('관리자 페이지'),
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
+            SizedBox(height: 20),
+          IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () {
+              Navigator.pushNamed(context, PaymentScreen.routeName); // '/password'로 이동
+            },
+          ),            
+          Text(
               '상품 추가',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
