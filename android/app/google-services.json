@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "795200079650",
+    "firebase_url": "https://geoggurostore-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "geoggurostore",
+    "storage_bucket": "geoggurostore.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:795200079650:android:ae695ae7ef67bcfb74077b",
+        "android_client_info": {
+          "package_name": "com.example.geogguro_store_boom"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBodbkbyCzCuRzYEKxfliBmCYklh2-0yIo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

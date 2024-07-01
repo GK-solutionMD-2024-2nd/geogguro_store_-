@@ -8,10 +8,12 @@ import '../providers/cart_provider.dart';
 import 'admin_screen.dart';
 import 'password_screen.dart';
 
-late AssetsAudioPlayer _assetsAudioPlayer = AssetsAudioPlayer.newPlayer();
+AssetsAudioPlayer _assetsAudioPlayer = AssetsAudioPlayer.newPlayer();
 
 class PaymentScreen extends StatelessWidget {
   static const routeName = '/payment';
+
+  const PaymentScreen({super.key});
 
   void myDialog(BuildContext context) {
     final cart = Provider.of<CartProvider>(context, listen: false);
@@ -30,7 +32,7 @@ class PaymentScreen extends StatelessWidget {
         return StatefulBuilder(
           builder: (context, setState) {
             void startTimer() {
-              timer = Timer.periodic(Duration(seconds: 1), (timer) async {
+              timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
                 setState(() {
                   if (remainingTime > 0) {
                     remainingTime--;
@@ -41,7 +43,7 @@ class PaymentScreen extends StatelessWidget {
                 });
               });
             }
-            
+
             if (remainingTime == 120) {
               startTimer();
             }
@@ -50,7 +52,7 @@ class PaymentScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15),
               ),
-              child: Container(
+              child: SizedBox(
                 width: dialogWidth,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -58,7 +60,7 @@ class PaymentScreen extends StatelessWidget {
                     Container(
                       height: 50,
                       width: double.infinity,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: Color.fromRGBO(255, 217, 1, 1.0),
                         borderRadius: BorderRadius.vertical(
                           top: Radius.circular(15),
@@ -133,9 +135,9 @@ class PaymentScreen extends StatelessWidget {
                                 version: QrVersions.auto,
                                 size: 150,
                               ),
-                              Column(
+                              const Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
+                                children: [
                                   Text(
                                     '결제를 완료하면\n냉장고가 열립니다',
                                     style: TextStyle(
@@ -162,7 +164,7 @@ class PaymentScreen extends StatelessWidget {
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.red,
-                              minimumSize: Size(200, 50),
+                              minimumSize: const Size(200, 50),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
@@ -211,12 +213,12 @@ class PaymentScreen extends StatelessWidget {
                 left: 0,
                 right: 0,
                 child: Container(
-                  color: Color.fromRGBO(27, 70, 180, 1.0),
+                  color: const Color.fromRGBO(27, 70, 180, 1.0),
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      SizedBox(width: 35),
+                      const SizedBox(width: 35),
                       const Text(
                         "거꾸로 매점",
                         style: TextStyle(
@@ -226,7 +228,8 @@ class PaymentScreen extends StatelessWidget {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => _navigateToAdminScreen(context), // "거꾸로 매점" 클릭 시 관리자 페이지로 이동
+                        onTap: () => _navigateToAdminScreen(
+                            context), // "거꾸로 매점" 클릭 시 관리자 페이지로 이동
                         child: Image.asset(
                           "assets/imgs/꾸로사진.png",
                           width: 100,
@@ -241,10 +244,11 @@ class PaymentScreen extends StatelessWidget {
                 top: MediaQuery.of(context).size.height * 0.15,
                 left: 20,
                 right: 20,
-                child: Container(
+                child: SizedBox(
                   height: MediaQuery.of(context).size.height * 0.6,
                   child: GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3, // 한 줄에 세 개의 항목
                       childAspectRatio: 0.8,
                       crossAxisSpacing: 10,
@@ -254,8 +258,8 @@ class PaymentScreen extends StatelessWidget {
                     itemBuilder: (ctx, index) {
                       var goodsList = provider.goodsList;
                       final product = {
-                        'id': '${goodsList[index].id}',
-                        'title': '${goodsList[index].title}',
+                        'id': goodsList[index].id,
+                        'title': goodsList[index].title,
                         'price': goodsList[index].price,
                         'quantity': goodsList[index].quantity,
                         'img': goodsList[index].img.path // 파일의 경로 문자열을 사용하도록 수정
@@ -263,9 +267,13 @@ class PaymentScreen extends StatelessWidget {
                       return GridTile(
                         child: GestureDetector(
                           onTap: () {
-                            var cartProvider = Provider.of<CartProvider>(context, listen: false);
+                            var cartProvider = Provider.of<CartProvider>(
+                                context,
+                                listen: false);
                             var currentGoods = cartProvider.goodsList[index];
-                            var currentCartQuantity = cartProvider.items[currentGoods.id]?.quantity ?? 0;
+                            var currentCartQuantity =
+                                cartProvider.items[currentGoods.id]?.quantity ??
+                                    0;
 
                             if (currentGoods.quantity > currentCartQuantity) {
                               cartProvider.addItem(
@@ -275,15 +283,15 @@ class PaymentScreen extends StatelessWidget {
                               );
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
+                                const SnackBar(
                                   content: Text('상품이 더 이상 선택할 수 없습니다.'),
                                 ),
                               );
                             }
                           },
                           child: Container(
-                            padding: EdgeInsets.all(10),
-                            margin: EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(10),
+                            margin: const EdgeInsets.only(bottom: 12),
                             height: 200,
                             decoration: BoxDecoration(
                               color: Colors.white,
@@ -293,45 +301,46 @@ class PaymentScreen extends StatelessWidget {
                                   color: Colors.grey.withOpacity(0.5),
                                   spreadRadius: 1,
                                   blurRadius: 3,
-                                  offset: Offset(0, 3),
+                                  offset: const Offset(0, 3),
                                 ),
                               ],
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                SizedBox(height: 15),
-                                Container(
+                                const SizedBox(height: 15),
+                                SizedBox(
                                   height: 150,
                                   width: double.infinity,
                                   child: Image.file(
-                                    File(product['img']), // 파일 경로를 가진 img 필드를 직접 사용하도록 수정
+                                    File(product[
+                                        'img']), // 파일 경로를 가진 img 필드를 직접 사용하도록 수정
                                     fit: BoxFit.cover,
                                   ),
                                 ),
-                                SizedBox(height: 8),
+                                const SizedBox(height: 8),
                                 Flexible(
                                   child: Text(
                                     product['title'] as String,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontFamily: 'saum',
                                       fontSize: 18,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                SizedBox(height: 8),
+                                const SizedBox(height: 8),
                                 Text(
                                   '${product['price']} 원',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontFamily: 'saum',
                                     fontSize: 16,
                                   ),
                                 ),
-                                SizedBox(height: 8),
+                                const SizedBox(height: 8),
                                 Text(
                                   '남은 수량 : ${product['quantity']} 개',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontFamily: 'saum',
                                     fontSize: 16,
                                   ),
@@ -351,11 +360,12 @@ class PaymentScreen extends StatelessWidget {
                 right: 0,
                 child: Container(
                   color: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         '장바구니',
                         style: TextStyle(
                           fontSize: 25,
@@ -363,7 +373,7 @@ class PaymentScreen extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Container(
+                      SizedBox(
                         height: 100,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
@@ -372,7 +382,7 @@ class PaymentScreen extends StatelessWidget {
                             final item = cart.items.values.toList()[i];
                             return Container(
                               width: 90,
-                              margin: EdgeInsets.symmetric(horizontal: 5),
+                              margin: const EdgeInsets.symmetric(horizontal: 5),
                               child: Stack(
                                 children: [
                                   Column(
@@ -382,27 +392,31 @@ class PaymentScreen extends StatelessWidget {
                                         width: 60,
                                         decoration: BoxDecoration(
                                           image: DecorationImage(
-                                            image: FileImage(File(provider.goodsList[i].img.path)), // 파일 경로를 가진 img 필드를 직접 사용하도록 수정
+                                            image: FileImage(File(provider
+                                                .goodsList[i]
+                                                .img
+                                                .path)), // 파일 경로를 가진 img 필드를 직접 사용하도록 수정
                                             fit: BoxFit.cover,
                                           ),
                                         ),
                                       ),
-                                      SizedBox(height: 5),
+                                      const SizedBox(height: 5),
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: <Widget>[
                                           Text(
-                                            '${item.title}',
+                                            item.title,
                                             textAlign: TextAlign.center,
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                               fontFamily: 'saum',
                                               fontSize: 16,
                                             ),
                                           ),
-                                          SizedBox(width: 5),
+                                          const SizedBox(width: 5),
                                           Text(
                                             '${item.quantity} 개',
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                               fontFamily: 'saum',
                                               fontSize: 16,
                                             ),
@@ -415,10 +429,12 @@ class PaymentScreen extends StatelessWidget {
                                     top: -7,
                                     right: 5,
                                     child: IconButton(
-                                      icon: Icon(Icons.close),
+                                      icon: const Icon(Icons.close),
                                       iconSize: 20,
                                       onPressed: () {
-                                        Provider.of<CartProvider>(context, listen: false).removeItem(item.id);
+                                        Provider.of<CartProvider>(context,
+                                                listen: false)
+                                            .removeItem(item.id);
                                       },
                                     ),
                                   ),
@@ -428,14 +444,14 @@ class PaymentScreen extends StatelessWidget {
                           },
                         ),
                       ),
-                      SizedBox(height: 5),
+                      const SizedBox(height: 5),
                       Center(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             Text(
                               '총액 : $totalAmount',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 fontFamily: 'saum',
@@ -448,17 +464,18 @@ class PaymentScreen extends StatelessWidget {
                                   loopMode: LoopMode.none, // 반복 없이 한 번만 재생
                                   autoStart: true, // 자동 시작
                                   showNotification: false, // 알림 표시 안 함
-                                );    
+                                );
                                 myDialog(context);
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color.fromRGBO(255, 217, 1, 1.0),
+                                backgroundColor:
+                                    const Color.fromRGBO(255, 217, 1, 1.0),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(15),
                                 ),
-                                minimumSize: Size(150, 50),
+                                minimumSize: const Size(150, 50),
                               ),
-                              child: Text(
+                              child: const Text(
                                 '결제하기',
                                 style: TextStyle(
                                   color: Colors.black,
