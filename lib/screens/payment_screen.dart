@@ -1,11 +1,9 @@
-import 'dart:convert';
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
-import 'package:assets_audio_player/assets_audio_player.dart'; // Import assets_audio_player
+import 'package:assets_audio_player/assets_audio_player.dart';
 import '../providers/cart_provider.dart';
 import 'admin_screen.dart';
 import 'password_screen.dart';
@@ -44,13 +42,6 @@ class PaymentScreen extends StatelessWidget {
               });
             }
             
-            // _assetsAudioPlayer.open(
-            //   Audio("assets/audios/flutter.wav"),
-            //   loopMode: LoopMode.none, // 반복 없이 한 번만 재생
-            //   autoStart: true, // 자동 시작
-            //   showNotification: false, // 알림 표시 안 함
-            // );
-
             if (remainingTime == 120) {
               startTimer();
             }
@@ -225,21 +216,22 @@ class PaymentScreen extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      GestureDetector(
-                        onTap: () => _navigateToAdminScreen(context), // "거꾸로 매점" 클릭 시 관리자 페이지로 이동
-                        child: Text(
-                          "거꾸로 매점",
-                          style: TextStyle(
-                            fontSize: 40,
-                            fontFamily: 'saum',
-                            color: Colors.white,
-                          ),
+                      SizedBox(width: 35),
+                      const Text(
+                        "거꾸로 매점",
+                        style: TextStyle(
+                          fontSize: 40,
+                          fontFamily: 'saum',
+                          color: Colors.white,
                         ),
                       ),
-                      Image.asset(
-                        "assets/imgs/꾸로사진.png",
-                        width: 100,
-                        height: 60,
+                      GestureDetector(
+                        onTap: () => _navigateToAdminScreen(context), // "거꾸로 매점" 클릭 시 관리자 페이지로 이동
+                        child: Image.asset(
+                          "assets/imgs/꾸로사진.png",
+                          width: 100,
+                          height: 60,
+                        ),
                       ),
                     ],
                   ),
@@ -254,7 +246,7 @@ class PaymentScreen extends StatelessWidget {
                   child: GridView.builder(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3, // 한 줄에 세 개의 항목
-                      childAspectRatio: 1.2,
+                      childAspectRatio: 0.8,
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
                     ),
@@ -266,7 +258,7 @@ class PaymentScreen extends StatelessWidget {
                         'title': '${goodsList[index].title}',
                         'price': goodsList[index].price,
                         'quantity': goodsList[index].quantity,
-                        'img': goodsList[index].img
+                        'img': goodsList[index].img.path // 파일의 경로 문자열을 사용하도록 수정
                       };
                       return GridTile(
                         child: GestureDetector(
@@ -292,6 +284,7 @@ class PaymentScreen extends StatelessWidget {
                           child: Container(
                             padding: EdgeInsets.all(10),
                             margin: EdgeInsets.only(bottom: 12),
+                            height: 200,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(10),
@@ -307,32 +300,13 @@ class PaymentScreen extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                SizedBox(height: 15),
                                 Container(
-                                  height: 165,
+                                  height: 150,
                                   width: double.infinity,
-                                  child: Image.network(
-                                    product['img'] as String,
-                                    fit: BoxFit.contain, // 이미지가 컨테이너 내에서 비율을 유지하며 맞춰짐
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) {
-                                        return child;
-                                      }
-                                      return Center(
-                                        child: CircularProgressIndicator(
-                                          value: loadingProgress.expectedTotalBytes != null
-                                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                              : null,
-                                        ),
-                                      );
-                                    },
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Center(
-                                        child: Text(
-                                          '이미지 로드 실패',
-                                          style: TextStyle(color: Colors.red),
-                                        ),
-                                      );
-                                    },
+                                  child: Image.file(
+                                    File(product['img']), // 파일 경로를 가진 img 필드를 직접 사용하도록 수정
+                                    fit: BoxFit.cover,
                                   ),
                                 ),
                                 SizedBox(height: 8),
@@ -408,7 +382,7 @@ class PaymentScreen extends StatelessWidget {
                                         width: 60,
                                         decoration: BoxDecoration(
                                           image: DecorationImage(
-                                            image: NetworkImage(provider.goodsList[i].img),
+                                            image: FileImage(File(provider.goodsList[i].img.path)), // 파일 경로를 가진 img 필드를 직접 사용하도록 수정
                                             fit: BoxFit.cover,
                                           ),
                                         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 
 class CartItem {
   final String id;
@@ -17,7 +18,7 @@ class CartItem {
 class Goods {
   String id;
   String title;
-  String img;
+  var img;
   int quantity;
   int price;
 

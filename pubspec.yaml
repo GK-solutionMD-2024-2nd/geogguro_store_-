@@ -19,6 +19,8 @@ dependencies:
   audioplayers: ^6.0.0
   assets_audio_player: ^3.1.1
   cached_network_image: ^3.3.1
+  firebase_core: ^3.1.1
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:

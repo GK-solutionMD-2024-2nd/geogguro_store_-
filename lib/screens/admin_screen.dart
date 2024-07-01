@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Add this import for TextInputFormatter
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../providers/cart_provider.dart'; // CartProvider를 import합니다.
+import '../providers/cart_provider.dart';
 import 'password_screen.dart';
 import 'payment_screen.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class AdminScreen extends StatefulWidget {
   static const String routeName = '/admin';
@@ -12,9 +14,10 @@ class AdminScreen extends StatefulWidget {
   _AdminScreenState createState() => _AdminScreenState();
 }
 
+var userImage;
+
 class _AdminScreenState extends State<AdminScreen> {
   TextEditingController _productTitleController = TextEditingController();
-  TextEditingController _productImageUrlController = TextEditingController();
   TextEditingController _productPriceController = TextEditingController();
   TextEditingController _productQuantityController = TextEditingController();
 
@@ -22,15 +25,17 @@ class _AdminScreenState extends State<AdminScreen> {
   void _saveProduct(BuildContext context, String id) {
     final goodsProvider = Provider.of<CartProvider>(context, listen: false);
     String productTitle = _productTitleController.text;
-    String productImageUrl = _productImageUrlController.text; // Get the image URL
     int productPrice = int.tryParse(_productPriceController.text) ?? 0;
     int productQuantity = int.tryParse(_productQuantityController.text) ?? 0;
 
-    if (productTitle.isNotEmpty && productImageUrl.isNotEmpty && productPrice > 0 && productQuantity > 0) {
+    if (productTitle.isNotEmpty &&
+        userImage != null &&
+        productPrice > 0 &&
+        productQuantity > 0) {
       Goods newGoods = Goods(
         id: id,
         title: productTitle,
-        img: productImageUrl, // Use the image URL
+        img: userImage,
         price: productPrice,
         quantity: productQuantity,
       );
@@ -41,7 +46,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
   // 상품 삭제 함수
   void _deleteProduct(BuildContext context, String productId) {
-    final goodsProvider = Provider.of<CartProvider>(context, listen: false); // CartProvider를 사용합니다.
+    final goodsProvider = Provider.of<CartProvider>(context, listen: false);
     goodsProvider.removeGoods(productId);
   }
 
@@ -50,7 +55,6 @@ class _AdminScreenState extends State<AdminScreen> {
     _productTitleController.text = goods.title;
     _productPriceController.text = goods.price.toString();
     _productQuantityController.text = goods.quantity.toString();
-    _productImageUrlController.text = goods.img;
 
     showDialog(
       context: context,
@@ -61,11 +65,21 @@ class _AdminScreenState extends State<AdminScreen> {
           children: [
             TextField(
               controller: _productTitleController,
-              decoration: InputDecoration(labelText: '상품 이름'),
+              decoration: InputDecoration(
+                labelText: '상품 이름',
+                labelStyle: TextStyle(
+                  fontFamily: 'saum',
+                ),
+              ),
             ),
             TextField(
               controller: _productPriceController,
-              decoration: InputDecoration(labelText: '상품 가격'),
+              decoration: InputDecoration(
+                labelText: '상품 가격',
+                labelStyle: TextStyle(
+                  fontFamily: 'saum',
+                ),
+              ),
               keyboardType: TextInputType.number,
               inputFormatters: <TextInputFormatter>[
                 FilteringTextInputFormatter.digitsOnly,
@@ -73,15 +87,28 @@ class _AdminScreenState extends State<AdminScreen> {
             ),
             TextField(
               controller: _productQuantityController,
-              decoration: InputDecoration(labelText: '상품 수량'),
+              decoration: InputDecoration(
+                labelText: '상품 수량',
+                labelStyle: TextStyle(
+                  fontFamily: 'saum',
+                ),
+              ),
               keyboardType: TextInputType.number,
               inputFormatters: <TextInputFormatter>[
                 FilteringTextInputFormatter.digitsOnly,
               ],
             ),
-            TextField(
-              controller: _productImageUrlController,
-              decoration: InputDecoration(labelText: '이미지 URL'),
+            IconButton(
+              icon: Icon(Icons.camera_alt),
+              onPressed: () async {
+                var picker = ImagePicker();
+                var image = await picker.pickImage(source: ImageSource.gallery);
+                if (image != null) {
+                  setState(() {
+                    userImage = File(image.path);
+                  });
+                }
+              },
             ),
           ],
         ),
@@ -90,14 +117,121 @@ class _AdminScreenState extends State<AdminScreen> {
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: Text('취소'),
+            child: Text(
+              '취소',
+              style: TextStyle(
+                fontFamily: 'saum',
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
               _saveProduct(context, goods.id);
               Navigator.of(context).pop();
             },
-            child: Text('저장'),
+            child: Text(
+              '저장',
+              style: TextStyle(
+                fontFamily: 'saum',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 상품 추가 다이얼로그
+  void _addProductDialog(BuildContext context) {
+    _productTitleController.clear();
+    _productPriceController.clear();
+    _productQuantityController.clear();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          '상품 추가',
+          style: TextStyle(
+            fontFamily: 'saum',
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _productTitleController,
+              decoration: InputDecoration(
+                labelText: '상품 이름',
+                labelStyle: TextStyle(
+                  fontFamily: 'saum',
+                ),
+              ),
+            ),
+            TextField(
+              controller: _productPriceController,
+              decoration: InputDecoration(
+                labelText: '상품 가격',
+                labelStyle: TextStyle(
+                  fontFamily: 'saum',
+                ),
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+            ),
+            TextField(
+              controller: _productQuantityController,
+              decoration: InputDecoration(
+                labelText: '상품 수량',
+                labelStyle: TextStyle(
+                  fontFamily: 'saum',
+                ),
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+            ),
+            IconButton(
+              icon: Icon(Icons.camera_alt),
+              onPressed: () async {
+                var picker = ImagePicker();
+                var image = await picker.pickImage(source: ImageSource.gallery);
+                if (image != null) {
+                  setState(() {
+                    userImage = File(image.path);
+                  });
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text(
+              '취소',
+              style: TextStyle(
+                fontFamily: 'saum',
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              String newId = DateTime.now().toString(); // 임시 ID
+              _saveProduct(context, newId);
+              Navigator.of(context).pop();
+            },
+            child: Text(
+              '추가',
+              style: TextStyle(
+                fontFamily: 'saum',
+              ),
+            ),
           ),
         ],
       ),
@@ -107,78 +241,148 @@ class _AdminScreenState extends State<AdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text("상품 관리",
+            style: TextStyle(
+              fontFamily: "saum",
+              color: Colors.white,
+              fontSize: 35,
+            )),
+        leadingWidth: 165,
+        leading: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.pushNamed(context, PaymentScreen.routeName);
+            },
+            style: ElevatedButton.styleFrom(
+              elevation: 0,
+            ),
+            child: Text(
+              '메인 페이지로',
+              style: TextStyle(
+                fontFamily: 'saum',
+                fontSize: 18,
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: ElevatedButton(
+              onPressed: () => _addProductDialog(context),
+              style: ElevatedButton.styleFrom(
+                elevation: 0,
+              ),
+              child: Text(
+                '상품 추가',
+                style: TextStyle(
+                  fontFamily: 'saum',
+                  fontSize: 18,
+                ),
+              ),
+            ),
+          ),
+        ],
+        backgroundColor: Color.fromRGBO(27, 70, 180, 1.0),
+      ),
+      backgroundColor: Color.fromRGBO(27, 70, 180, 1.0),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SizedBox(height: 20),
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () {
-              Navigator.pushNamed(context, PaymentScreen.routeName); // '/password'로 이동
-            },
-          ),            
-          Text(
-              '상품 추가',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            TextField(
-              controller: _productTitleController,
-              decoration: InputDecoration(labelText: '상품 이름'),
-            ),
-            TextField(
-              controller: _productPriceController,
-              decoration: InputDecoration(labelText: '상품 가격'),
-              keyboardType: TextInputType.number,
-              inputFormatters: <TextInputFormatter>[
-                FilteringTextInputFormatter.digitsOnly,
-              ],
-            ),
-            TextField(
-              controller: _productQuantityController,
-              decoration: InputDecoration(labelText: '상품 수량'),
-              keyboardType: TextInputType.number,
-              inputFormatters: <TextInputFormatter>[
-                FilteringTextInputFormatter.digitsOnly,
-              ],
-            ),
-            TextField(
-              controller: _productImageUrlController,
-              decoration: InputDecoration(labelText: '이미지 URL'),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                String newId = DateTime.now().toString(); // 임시 ID
-                _saveProduct(context, newId);
-                _productTitleController.clear();
-                _productPriceController.clear();
-                _productQuantityController.clear();
-                _productImageUrlController.clear();
-                
-              },
-              child: Text('추가'),
-            ),
-            SizedBox(height: 20),
             Text(
               '상품 리스트',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 25,
+                fontWeight: FontWeight.bold,
+                fontFamily: "saum",
+                color: Colors.white,
+              ),
             ),
             Expanded(
               child: Consumer<CartProvider>(
-                builder: (context, goodsProvider, _) => ListView.builder(
-                  itemCount: goodsProvider.goodsList.length, // goodsProvider에서 goodsList를 사용합니다.
+                builder: (context, goodsProvider, _) => GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio: 0.8,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                  ),
+                  itemCount: goodsProvider.goodsList.length,
                   itemBuilder: (context, index) {
                     final goods = goodsProvider.goodsList[index];
-                    return ListTile(
-                      title: Text(goods.title),
-                      subtitle: Text('${goods.price} 원 / ${goods.quantity} 개'),
-                      trailing: IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () => _deleteProduct(context, goods.id),
-                      ),
+                    return GestureDetector(
                       onTap: () => _editProductDialog(context, goods),
+                      child: Container(
+                        height: 200,
+                        padding: EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.5),
+                              spreadRadius: 1,
+                              blurRadius: 3,
+                              offset: Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(height: 15),
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  height: 150,
+                                  width: double.infinity,
+                                  child: Image.file(goods.img), // Corrected image display
+                                ),
+                                Positioned(
+                                  top: -4,
+                                  right: -2,
+                                  child: IconButton(
+                                    icon: Icon(Icons.close),
+                                    iconSize: 20,
+                                    onPressed: () => _deleteProduct(context, goods.id),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              goods.title,
+                              style: TextStyle(
+                                fontFamily: 'saum',
+                                fontSize: 18,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              '${goods.price} 원',
+                              style: TextStyle(
+                                fontFamily: 'saum',
+                                fontSize: 16,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              '남은 수량 : ${goods.quantity} 개',
+                              style: TextStyle(
+                                fontFamily: 'saum',
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     );
                   },
                 ),
