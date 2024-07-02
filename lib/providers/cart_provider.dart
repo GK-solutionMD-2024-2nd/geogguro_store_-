@@ -111,4 +111,18 @@ class CartProvider with ChangeNotifier {
     _items.remove(id); // Remove the item from the cart as well
     notifyListeners();
   }
+
+  void deductStockAfterPayment() {
+    _items.forEach((productId, cartItem) {
+      final goodsIndex = _goodsList.indexWhere((goods) => goods.id == productId);
+      if (goodsIndex >= 0) {
+        _goodsList[goodsIndex].quantity -= cartItem.quantity;
+        if (_goodsList[goodsIndex].quantity < 0) {
+          _goodsList[goodsIndex].quantity = 0;
+        }
+      }
+    });
+    _items.clear(); // 결제 후 장바구니 비우기
+    notifyListeners();
+  }
 }

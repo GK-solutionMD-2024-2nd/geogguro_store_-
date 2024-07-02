@@ -8,6 +8,7 @@ import 'screens/admin_screen.dart';
 import 'screens/password_screen.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -29,10 +30,10 @@ class MyApp extends StatelessWidget {
         initialRoute: '/', // 초기 라우트 설정
         routes: {
           '/': (ctx) =>
-              const PaymentScreen(), // '/' 라우트 설정 (예시로 PaymentScreen을 초기 화면으로 설정)
+              PaymentScreen(), // '/' 라우트 설정 (예시로 PaymentScreen을 초기 화면으로 설정)
           '/admin': (ctx) => AdminScreen(),
-          '/password': (ctx) => const PasswordPage(), // '/admin' 라우트 설정
-          '/payment': (ctx) => const PaymentScreen(),
+          '/password': (ctx) => PasswordPage(),      // '/admin' 라우트 설정
+          '/payment': (ctx) => PaymentScreen(),
         },
       ),
     );

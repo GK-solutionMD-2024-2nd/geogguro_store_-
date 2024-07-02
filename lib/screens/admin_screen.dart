@@ -7,6 +7,8 @@ import 'payment_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
+FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
 class AdminScreen extends StatefulWidget {
   static const String routeName = '/admin';
 
