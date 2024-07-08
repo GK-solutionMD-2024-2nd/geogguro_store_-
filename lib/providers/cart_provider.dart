@@ -18,7 +18,7 @@ class CartItem {
 class Goods {
   String id;
   String title;
-  var img;
+  String img;
   int quantity;
   int price;
 

@@ -3,15 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:geogguro_store_boom/firebase_options.dart';
 import 'package:provider/provider.dart';
 import 'screens/payment_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'providers/cart_provider.dart';
 import 'screens/admin_screen.dart';
 import 'screens/password_screen.dart';
+
+FirebaseFirestore _firestore = FirebaseFirestore.instance;
+// firebase_storage.FirebaseStorage _storage = firebase_storage.FirebaseStorage.instance;
+
+AdminScreenState popo = new AdminScreenState();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  popo.loadProductsFromFirestore();
   runApp(const MyApp());
 }
 

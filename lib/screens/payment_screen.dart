@@ -1,5 +1,7 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -7,136 +9,145 @@ import 'package:assets_audio_player/assets_audio_player.dart';
 import '../providers/cart_provider.dart';
 import 'admin_screen.dart';
 import 'password_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:url_launcher/url_launcher.dart'; // url_launcher 패키지 임포트
 
 FirebaseFirestore _firestore = FirebaseFirestore.instance;
+firebase_storage.FirebaseStorage _storage = firebase_storage.FirebaseStorage.instance;
+late AssetsAudioPlayer _assetsAudioPlayer = AssetsAudioPlayer.newPlayer();
 
-late AssetsAudioPlayer _assetsAudioPlayer = AssetsAudioPlayer.newPlayer();               
+AdminScreenState popo = new AdminScreenState();
 
-class PaymentScreen extends StatelessWidget {
+double _position = 0;
+double _velocity = 10; // 속도 조정
+Timer? _timer;
+
+
+class PaymentScreen extends StatefulWidget {
   static const routeName = '/payment';
+  
+  @override
+  _PaymentScreenState createState() => _PaymentScreenState();
+}
 
-void dbDialog(BuildContext context) {
-  final cartProvid = Provider.of<CartProvider>(context, listen: false);
-  var cartItemsList = cartProvid.items.values.toList();
+class _PaymentScreenState extends State<PaymentScreen> {
+  void dbDialog(BuildContext context) {
+    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+    var cartItemsList = cartProvider.items.values.toList();
 
-  showDialog(
-    context: context,
-    builder: (context) {
-      final mediaQuery = MediaQuery.of(context);
-      final isTablet = mediaQuery.size.width > 600;
-      final dialogWidth = isTablet ? 600.0 : mediaQuery.size.width * 0.8;
-      final dialogHeight = isTablet ? 400.0 : mediaQuery.size.height * 0.5;
+    showDialog(
+      context: context,
+      builder: (context) {
+        final mediaQuery = MediaQuery.of(context);
+        final isTablet = mediaQuery.size.width > 600;
+        final dialogWidth = isTablet ? 600.0 : mediaQuery.size.width * 0.8;
+        final dialogHeight = isTablet ? 400.0 : mediaQuery.size.height * 0.5;
 
-      return Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Container(
-          width: dialogWidth,
-          height: dialogHeight,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 20),
-              const Text(
-                "결제를 하지 않고 '확인'버튼을 누를 시에는\n불이익이 발생할 수 있습니다.\n반드시 결제하시고 버튼을 눌러주세요.",
-                style: TextStyle(
-                  fontFamily: 'saum',
-                  fontSize: 20,
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Container(
+            width: dialogWidth,
+            height: dialogHeight,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 20),
+                const Text(
+                  "결제를 하지 않고 '확인' 버튼을 누를 시에는\n불이익이 발생할 수 있습니다.\n반드시 결제하시고 버튼을 눌러주세요.",
+                  style: TextStyle(
+                    fontFamily: 'saum',
+                    fontSize: 20,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 15),
-              // Expanded(
-              //   child: Column(
-              //     MainAxisSize.max,
-              //     mainAxisAlignment: MainAxisAlignment.center,
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ListView.builder(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.all(8),
-                    itemCount: cartItemsList.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      var cartItem = cartItemsList[index];
-                      return Text(
-                        "${cartItem.title} : ${cartItem.quantity}개 : ${cartItem.price * cartItem.quantity}원",
+                SizedBox(height: 15),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ListView.builder(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.all(8),
+                      itemCount: cartItemsList.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        var cartItem = cartItemsList[index];
+                        return Text(
+                          "${cartItem.title} : ${cartItem.quantity}개 : ${cartItem.price * cartItem.quantity}원",
+                          style: TextStyle(
+                            fontFamily: 'saum',
+                            fontSize: 20,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [ㄹ
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _assetsAudioPlayer.open(
+                          Audio("assets/audios/flutter.wav"),
+                          loopMode: LoopMode.none,
+                          autoStart: true,
+                          showNotification: false,
+                        );
+                        cartProvider.deductStockAfterPayment();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: Size(200, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text(
+                        '확인',
                         style: TextStyle(
                           fontFamily: 'saum',
                           fontSize: 20,
                         ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              //   ),
-              // ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      _assetsAudioPlayer.open(
-                        Audio("assets/audios/flutter.wav"),
-                        loopMode: LoopMode.none, // 반복 없이 한 번만 재생
-                        autoStart: true, // 자동 시작
-                        showNotification: false, // 알림 표시 안 함
-                      );
-                      cartProvid.deductStockAfterPayment();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: Size(200, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text(
-                      '확인',
-                      style: TextStyle(
-                        fontFamily: 'saum',
-                        fontSize: 20,
+                    SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: Size(200, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        '취소',
+                        style: TextStyle(
+                          fontFamily: 'saum',
+                          fontSize: 20,
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(width: 10),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: Size(200, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: Text(
-                      '취소',
-                      style: TextStyle(
-                        fontFamily: 'saum',
-                        fontSize: 20,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-            ],
+                  ],
+                ),
+                SizedBox(height: 20),
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
   void myDialog(BuildContext context) {
     final cart = Provider.of<CartProvider>(context, listen: false);
     final totalAmount = cart.totalAmount.toStringAsFixed(0);
-    final totalQuantity = cart.totalQuantity;
     int remainingTime = 120;
     Timer? timer;
 
@@ -161,7 +172,7 @@ void dbDialog(BuildContext context) {
                 });
               });
             }
-            
+
             if (remainingTime == 120) {
               startTimer();
             }
@@ -227,7 +238,7 @@ void dbDialog(BuildContext context) {
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '총 수량: $totalQuantity 개',
+                                    '총 수량: ${cart.totalQuantity} 개',
                                     style: const TextStyle(
                                       fontFamily: 'saum',
                                       fontSize: 20,
@@ -333,17 +344,167 @@ void dbDialog(BuildContext context) {
           },
         );
       },
-    ).then((_) {
-      timer?.cancel();
+    );
+  }
+
+Future<void> _suggestProduct(BuildContext context) async {
+  String productSuggest = _productSuggestController.text;
+  String id = DateTime.now().millisecondsSinceEpoch.toString(); // 현재 시각을 이용한 ID 생성
+
+  if (productSuggest.isNotEmpty) {
+    await _firestore.collection('suggest').doc(id).set({
+      'suggest': productSuggest,
+      'timestamp': DateTime.now(), // 현재 시각 저장 (옵션)
+    });
+  }
+}
+
+
+TextEditingController _productSuggestController = TextEditingController();
+
+void _suggestDialog(BuildContext context) {
+  _productSuggestController.clear();
+
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(
+        '상품 제안',
+        style: TextStyle(
+          fontFamily: 'saum',
+        ),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _productSuggestController,
+            decoration: InputDecoration(
+              labelText: '제안할 상품을 적어주세요!',
+              labelStyle: TextStyle(
+                fontFamily: 'saum',
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: Text(
+            '취소',
+            style: TextStyle(
+              fontFamily: 'saum',
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            _suggestProduct(context); // _suggestProduct에 context 전달
+          },
+          child: Text(
+            '제안하기',
+            style: TextStyle(
+              fontFamily: 'saum',
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+  void _navigateToAdminScreen(BuildContext context) {
+    Navigator.of(context).pushNamed(PasswordPage.routeName);
+  }
+
+  Future<void> loadProductsFromFirestore() async {
+    final goodsProvider = Provider.of<CartProvider>(context, listen: false);
+    final snapshot = await _firestore.collection('goods').get();
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      Goods goods = Goods(
+        id: doc.id,
+        title: data['title'],
+        price: data['price'],
+        quantity: data['quantity'],
+        img: data['img'], // assuming 'img' is the field for image path
+      );
+      goodsProvider.addGoods(goods);
+    }
+  }
+
+  @override
+  void initState() {
+    loadProductsFromFirestore();
+    super.initState();
+    _startMoving();
+  }
+  
+
+  void _startMoving() {
+    _timer = Timer.periodic(Duration(milliseconds: 16), (timer) {
+      setState(() {
+        _position += _velocity;
+        double screenWidth = MediaQuery.of(context).size.width;
+        double barWidth = screenWidth - 80;
+        if (_position > barWidth - 50 || _position < 0) {
+          _velocity = -_velocity;
+        }
+      });
     });
   }
 
-  void _navigateToAdminScreen(BuildContext context) {
-    Navigator.of(context).pushNamed(PasswordPage.routeName); // 관리자 페이지로 이동
+  void _increaseSpeed() {
+    setState(() {
+      if (_velocity > 0 && _velocity < 50) {
+        _velocity += 3;
+      } else if (_velocity < 0 && _velocity > -50) {
+        _velocity -= 3;
+      }
+    });
+  }
+
+  void _decreaseSpeed() {
+    setState(() {
+      if (_velocity > 5) {
+        _velocity -= 3;
+      } else if (_velocity < -5) {
+        _velocity += 3;
+      }
+    });
+  }
+
+  double _calculateProgress() {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double barWidth = screenWidth - 80;
+    return (_position / (barWidth - 50)) * 100;
+  }
+
+  final String kakaoTalkBotUrl = 'https://open.kakao.com/o/gfVrazAg'; // 여기에 실제 카카오톡 봇 URL을 입력하세요
+
+  // 카카오톡 봇 링크를 여는 함수
+  void _launchKakaoTalkBot() async {
+    if (await canLaunch(kakaoTalkBotUrl)) {
+      await launch(kakaoTalkBotUrl);
+    } else {
+      throw 'Could not launch $kakaoTalkBotUrl';
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    double progress = _calculateProgress();
     final cart = Provider.of<CartProvider>(context);
     final totalAmount = cart.totalAmount.toStringAsFixed(0);
 
@@ -363,6 +524,20 @@ void dbDialog(BuildContext context) {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SizedBox(width: 35),
+                      GestureDetector(
+                        onTap: () {
+                          _launchKakaoTalkBot();
+                        },
+                        child: const Text(
+                          '문의하기',
+                          style: TextStyle(
+                            fontFamily: 'saum',
+                            fontSize: 20,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 10),
                       const Text(
                         "거꾸로 매점",
                         style: TextStyle(
@@ -372,14 +547,98 @@ void dbDialog(BuildContext context) {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => _navigateToAdminScreen(context), // "거꾸로 매점" 클릭 시 관리자 페이지로 이동
+                        onTap: () => _navigateToAdminScreen(context),
                         child: Image.asset(
                           "assets/imgs/꾸로사진.png",
                           width: 100,
                           height: 60,
                         ),
                       ),
+                      SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: () {
+                          _suggestDialog(context);
+                        },
+                        child: const Text(
+                          '제안하기',
+                          style: TextStyle(
+                            fontFamily: 'saum',
+                            fontSize: 20,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     ],
+                  ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.topCenter,
+                child: Container(
+                  margin: EdgeInsets.symmetric(horizontal: 40, vertical: 150),
+                  width: MediaQuery.of(context).size.width - 80,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 100,
+                left: _position + 40,
+                child: Image.asset(
+                  'assets/imgs/꾸로사진.png',
+                  width: 50,
+                ),
+              ),
+              Positioned(
+                bottom: 1125, // Adjusted to position the button just below the bar
+                left: 40,  // Positioned at the start of the bar
+                child: ElevatedButton(
+                  onPressed: _decreaseSpeed,
+                  child: Text('-'),
+                  style: ButtonStyle(
+                    backgroundColor: MaterialStateProperty.all(const Color.fromARGB(255, 255, 255, 255)), // 버튼 배경색
+                    foregroundColor: MaterialStateProperty.all(const Color.fromARGB(255, 0, 0, 0)), // 버튼 텍스트 색
+                    padding: MaterialStateProperty.all(
+                      EdgeInsets.symmetric(horizontal: 16, vertical: 10), // 버튼 크기 조정
+                    ),
+                    textStyle: MaterialStateProperty.all(
+                      TextStyle(
+                        fontSize: 20, // 버튼 텍스트 크기
+                      ),
+                    ),
+                    shape: MaterialStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8), // 버튼 모서리 둥글기
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 1125, // Adjusted to position the button just below the bar
+                right: 40, // Positioned at the end of the bar
+                child: ElevatedButton(
+                  onPressed: _increaseSpeed,
+                  child: Text('+'),
+                  style: ButtonStyle(
+                    backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 255, 255, 255)), // 버튼 배경색
+                    foregroundColor: MaterialStateProperty.all(const Color.fromARGB(255, 0, 0, 0)), // 버튼 텍스트 색
+                    padding: MaterialStateProperty.all(
+                      EdgeInsets.symmetric(horizontal: 16, vertical: 10), // 버튼 크기 조정
+                    ),
+                    textStyle: MaterialStateProperty.all(
+                      TextStyle(
+                        fontSize: 20, // 버튼 텍스트 크기
+                      ),
+                    ),
+                    shape: MaterialStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8), // 버튼 모서리 둥글기
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -391,7 +650,7 @@ void dbDialog(BuildContext context) {
                   height: MediaQuery.of(context).size.height * 0.6,
                   child: GridView.builder(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3, // 한 줄에 세 개의 항목
+                      crossAxisCount: 3,
                       childAspectRatio: 0.8,
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
@@ -399,22 +658,16 @@ void dbDialog(BuildContext context) {
                     itemCount: provider.goodsList.length,
                     itemBuilder: (ctx, index) {
                       var goodsList = provider.goodsList;
-                      final product = {
-                        'id': '${goodsList[index].id}',
-                        'title': '${goodsList[index].title}',
-                        'price': goodsList[index].price,
-                        'quantity': goodsList[index].quantity,
-                        'img': goodsList[index].img.path // 파일의 경로 문자열을 사용하도록 수정
-                      };
+                      final product = goodsList[index];
+
                       return GridTile(
                         child: GestureDetector(
                           onTap: () {
-                            var cartProvider = Provider.of<CartProvider>(context, listen: false);
-                            var currentGoods = cartProvider.goodsList[index];
-                            var currentCartQuantity = cartProvider.items[currentGoods.id]?.quantity ?? 0;
+                            var currentGoods = goodsList[index];
+                            var currentCartQuantity = cart.items[currentGoods.id]?.quantity ?? 0;
 
                             if (currentGoods.quantity > currentCartQuantity) {
-                              cartProvider.addItem(
+                              cart.addItem(
                                 currentGoods.id,
                                 currentGoods.title,
                                 currentGoods.price,
@@ -450,15 +703,12 @@ void dbDialog(BuildContext context) {
                                 Container(
                                   height: 150,
                                   width: double.infinity,
-                                  child: Image.file(
-                                    File(product['img']), // 파일 경로를 가진 img 필드를 직접 사용하도록 수정
-                                    fit: BoxFit.contain,
-                                  ),
+                                  child: Image.network(product.img), // Load image from network
                                 ),
                                 SizedBox(height: 8),
                                 Flexible(
                                   child: Text(
-                                    product['title'] as String,
+                                    product.title,
                                     style: TextStyle(
                                       fontFamily: 'saum',
                                       fontSize: 18,
@@ -468,7 +718,7 @@ void dbDialog(BuildContext context) {
                                 ),
                                 SizedBox(height: 8),
                                 Text(
-                                  '${product['price']} 원',
+                                  '${product.price} 원',
                                   style: TextStyle(
                                     fontFamily: 'saum',
                                     fontSize: 16,
@@ -476,7 +726,7 @@ void dbDialog(BuildContext context) {
                                 ),
                                 SizedBox(height: 8),
                                 Text(
-                                  '남은 수량 : ${product['quantity']} 개',
+                                  '남은 수량 : ${product.quantity} 개',
                                   style: TextStyle(
                                     fontFamily: 'saum',
                                     fontSize: 16,
@@ -528,7 +778,7 @@ void dbDialog(BuildContext context) {
                                         width: 60,
                                         decoration: BoxDecoration(
                                           image: DecorationImage(
-                                            image: FileImage(File(provider.goodsList[i].img.path)), // 파일 경로를 가진 img 필드를 직접 사용하도록 수정
+                                            image: NetworkImage(provider.goodsList[i].img), // Load image from network
                                             fit: BoxFit.cover,
                                           ),
                                         ),
@@ -588,7 +838,7 @@ void dbDialog(BuildContext context) {
                               ),
                             ),
                             ElevatedButton(
-                              onPressed: () { 
+                              onPressed: () {
                                 myDialog(context);
                               },
                               style: ElevatedButton.styleFrom(
@@ -621,4 +871,3 @@ void dbDialog(BuildContext context) {
     );
   }
 }
-

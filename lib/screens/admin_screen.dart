@@ -1,62 +1,214 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import '../providers/cart_provider.dart';
-import 'password_screen.dart';
-import 'payment_screen.dart';
-import 'package:image_picker/image_picker.dart';
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:url_launcher/url_launcher.dart'; // url_launcher 패키지 임포트
+
+import '../providers/cart_provider.dart';
+import 'payment_screen.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+
 FirebaseFirestore _firestore = FirebaseFirestore.instance;
+firebase_storage.FirebaseStorage _storage = firebase_storage.FirebaseStorage.instance;
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => CartProvider(),
+      child: MaterialApp(
+        home: AdminScreen(),
+      ),
+    );
+  }
+}
 
 class AdminScreen extends StatefulWidget {
   static const String routeName = '/admin';
 
   @override
-  _AdminScreenState createState() => _AdminScreenState();
+  AdminScreenState createState() => AdminScreenState();
 }
 
-var userImage;
+// Suggests 클래스 최상위 수준에 정의
+class Suggests {
+  String suggest;
+  String timestamp;
 
-class _AdminScreenState extends State<AdminScreen> {
+  Suggests({
+    required this.suggest,
+    required this.timestamp,
+  });
+}
+
+class AdminScreenState extends State<AdminScreen> {
   TextEditingController _productTitleController = TextEditingController();
   TextEditingController _productPriceController = TextEditingController();
   TextEditingController _productQuantityController = TextEditingController();
+  File? _userImage;
 
-  // 상품 추가 또는 수정 함수
-  void _saveProduct(BuildContext context, String id) {
+  @override
+  void initState() {
+    super.initState();
+    loadProductsFromFirestore();
+  }
+
+  void loadProductsFromFirestore() async {
+    final goodsProvider = Provider.of<CartProvider>(context, listen: false);
+    final snapshot = await _firestore.collection('Goods').get();
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      Goods goods = Goods(
+        id: doc.id,
+        title: data['title'],
+        img: data['img'],
+        price: data['price'],
+        quantity: data['quantity'],
+      );
+      goodsProvider.addGoods(goods);
+    }
+  }
+
+  Future<String> uploadImage(File imageFile) async {
+    final now = DateTime.now();
+    var ref = _storage.ref().child('Images/$now.jpg');
+    await ref.putFile(imageFile);
+    return await ref.getDownloadURL();
+  }
+
+  void _suggestedDialog(BuildContext context) async {
+    final snapshot = await _firestore.collection('suggest').get();
+
+    List<Suggests> suggestsList = snapshot.docs.map((doc) {
+      Map<String, dynamic> data = doc.data();
+      Timestamp timestamp = data['timestamp'];
+      return Suggests(
+        suggest: data['suggest'],
+        timestamp: formatTimestampToDateString(timestamp),
+      );
+    }).toList();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          '제안된 상품 리스트',
+          style: TextStyle(
+            fontFamily: 'saum',
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: suggestsList.map((suggest) {
+              return ListTile(
+                title: Text(suggest.timestamp),
+                subtitle: Text(suggest.suggest),
+                contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text(
+              '확인',
+              style: TextStyle(
+                fontFamily: 'saum',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _saveProduct(BuildContext context, String id) async {
     final goodsProvider = Provider.of<CartProvider>(context, listen: false);
     String productTitle = _productTitleController.text;
     int productPrice = int.tryParse(_productPriceController.text) ?? 0;
     int productQuantity = int.tryParse(_productQuantityController.text) ?? 0;
 
     if (productTitle.isNotEmpty &&
-        userImage != null &&
+        _userImage != null &&
         productPrice > 0 &&
         productQuantity > 0) {
+      String imageUrl = await uploadImage(_userImage!);
+
       Goods newGoods = Goods(
         id: id,
         title: productTitle,
-        img: userImage,
+        img: imageUrl,
         price: productPrice,
         quantity: productQuantity,
       );
+
+      await _firestore.collection('Goods').doc(id).set({
+        'id': id,
+        'title': newGoods.title,
+        'img': newGoods.img,
+        'price': newGoods.price,
+        'quantity': newGoods.quantity,
+      });
 
       goodsProvider.addGoods(newGoods);
     }
   }
 
-  // 상품 삭제 함수
-  void _deleteProduct(BuildContext context, String productId) {
+  Future<void> _deleteProduct(BuildContext context, String productId) async {
     final goodsProvider = Provider.of<CartProvider>(context, listen: false);
     goodsProvider.removeGoods(productId);
+    await _firestore.collection('Goods').doc(productId).delete();
   }
 
-  // 상품 수정 다이얼로그
+  Future<void> _editProduct(BuildContext context, Goods goods) async {
+    final goodsProvider = Provider.of<CartProvider>(context, listen: false);
+    String productTitle = _productTitleController.text;
+    int productPrice = int.tryParse(_productPriceController.text) ?? 0;
+    int productQuantity = int.tryParse(_productQuantityController.text) ?? 0;
+
+    if (productTitle.isNotEmpty && productPrice > 0 && productQuantity > 0) {
+      String imageUrl = goods.img;
+      if (_userImage != null) {
+        imageUrl = await uploadImage(_userImage!);
+      }
+
+      Goods newGoods = Goods(
+        id: goods.id,
+        title: productTitle,
+        img: imageUrl,
+        price: productPrice,
+        quantity: productQuantity,
+      );
+
+      DocumentReference docRef = _firestore.collection('Goods').doc(goods.id);
+      await docRef.update({
+        'id': newGoods.id,
+        'title': newGoods.title,
+        'img': newGoods.img,
+        'price': newGoods.price,
+        'quantity': newGoods.quantity,
+      });
+
+      goodsProvider.addGoods(newGoods);
+    }
+  }
+
   void _editProductDialog(BuildContext context, Goods goods) {
     _productTitleController.text = goods.title;
     _productPriceController.text = goods.price.toString();
     _productQuantityController.text = goods.quantity.toString();
+    _userImage = null;
 
     showDialog(
       context: context,
@@ -107,7 +259,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 var image = await picker.pickImage(source: ImageSource.gallery);
                 if (image != null) {
                   setState(() {
-                    userImage = File(image.path);
+                    _userImage = File(image.path);
                   });
                 }
               },
@@ -128,7 +280,7 @@ class _AdminScreenState extends State<AdminScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              _saveProduct(context, goods.id);
+              _editProduct(context, goods);
               Navigator.of(context).pop();
             },
             child: Text(
@@ -143,11 +295,11 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
-  // 상품 추가 다이얼로그
   void _addProductDialog(BuildContext context) {
     _productTitleController.clear();
     _productPriceController.clear();
     _productQuantityController.clear();
+    _userImage = null;
 
     showDialog(
       context: context,
@@ -203,7 +355,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 var image = await picker.pickImage(source: ImageSource.gallery);
                 if (image != null) {
                   setState(() {
-                    userImage = File(image.path);
+                    _userImage = File(image.path);
                   });
                 }
               },
@@ -224,12 +376,11 @@ class _AdminScreenState extends State<AdminScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              String newId = DateTime.now().toString(); // 임시 ID
-              _saveProduct(context, newId);
+              _saveProduct(context, DateTime.now().toString());
               Navigator.of(context).pop();
             },
             child: Text(
-              '추가',
+              '저장',
               style: TextStyle(
                 fontFamily: 'saum',
               ),
@@ -242,14 +393,16 @@ class _AdminScreenState extends State<AdminScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final goodsProvider = Provider.of<CartProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text("상품 관리",
-            style: TextStyle(
-              fontFamily: "saum",
-              color: Colors.white,
-              fontSize: 35,
-            )),
+          style: TextStyle(
+            fontFamily: "saum",
+            color: Colors.white,
+            fontSize: 35,
+          )),
         leadingWidth: 165,
         leading: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -296,6 +449,20 @@ class _AdminScreenState extends State<AdminScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SizedBox(height: 20),
+            GestureDetector(
+              onTap: () {
+                _suggestedDialog(context);
+              },
+              child: const Text(
+                '제안된 상품 리스트',
+                style: TextStyle(
+                  fontFamily: 'saum',
+                  fontSize: 20,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            SizedBox(height: 10),
             Text(
               '상품 리스트',
               style: TextStyle(
@@ -344,7 +511,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                 Container(
                                   height: 150,
                                   width: double.infinity,
-                                  child: Image.file(goods.img), // Corrected image display
+                                  child: Image.network(goods.img),
                                 ),
                                 Positioned(
                                   top: -4,
@@ -395,4 +562,16 @@ class _AdminScreenState extends State<AdminScreen> {
       ),
     );
   }
+}
+
+String formatTimestampToDateString(Timestamp timestamp) {
+  DateTime dateTime = timestamp.toDate(); // Timestamp를 DateTime으로 변환
+
+  // 년도, 월, 일 추출
+  int year = dateTime.year;
+  int month = dateTime.month;
+  int day = dateTime.day;
+
+  // 년도, 월, 일을 문자열로 변환하여 반환
+  return '$year년 $month월 $day일';
 }
